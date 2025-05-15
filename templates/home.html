@@ -13,5 +13,8 @@
 <p>Nenhum projeto encontrado. Crie um novo!</p>
 {% endif %}
 
-<a href="#">+ Novo Projeto</a> <!-- aqui futuramente chamamos uma rota de criação -->
+<form method="post" action="{{ url_for('dashboard.criar_projeto') }}">
+  <input type="text" name="nome" placeholder="Nome do novo projeto" required>
+  <button type="submit">+ Novo Projeto</button>
+</form>
 {% endblock %}

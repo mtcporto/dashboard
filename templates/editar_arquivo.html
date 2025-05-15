@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Editando {{ path }} em {{ nome }}</h2>
+<form method="post">
+  <textarea name="conteudo" rows="20" cols="80">{{ conteudo }}</textarea>
+  <br>
+  <button type="submit">Salvar</button>
+</form>
+<a href="{{ url_for('dashboard.projeto', nome=nome) }}">← Voltar</a>
+{% endblock %}

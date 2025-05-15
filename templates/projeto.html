@@ -5,7 +5,7 @@
 
 <ul>
   {% for arquivo in arquivos %}
-    <li>{{ arquivo }}</li>
+    <li><a href="{{ url_for('dashboard.editar_arquivo', nome=nome, path=arquivo) }}">{{ arquivo }}</a></li>
   {% endfor %}
 </ul>
 
