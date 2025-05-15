@@ -1,0 +1,23 @@
+name: Deploy to PythonAnywhere
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Setup SSH key
+      uses: webfactory/ssh-agent@v0.8.1
+      with:
+        ssh-private-key: ${{ secrets.PA_SSH_PRIVATE_KEY }}
+
+    - name: Deploy to PythonAnywhere
+      run: |
+        ssh -o StrictHostKeyChecking=no devosflask@devosflask.pythonanywhere.com "cd ~/dashboard && git pull origin main"
