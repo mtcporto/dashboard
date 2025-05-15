@@ -3,11 +3,14 @@
 {% block content %}
 <h2>Arquivos de {{ nome }}</h2>
 
-<ul>
-  {% for arquivo in arquivos %}
-    <li><a href="{{ url_for('dashboard.editar_arquivo', nome=nome, path=arquivo) }}">{{ arquivo }}</a></li>
-  {% endfor %}
-</ul>
+{% for categoria, arquivos in estrutura.items() %}
+  <h3>{{ categoria }}</h3>
+  <ul>
+    {% for arquivo in arquivos %}
+      <li><a href="{{ url_for('dashboard.editar_arquivo', nome=nome, path=arquivo) }}">{{ arquivo }}</a></li>
+    {% endfor %}
+  </ul>
+{% endfor %}
 
 <a href="{{ url_for('dashboard.index') }}">← Voltar</a>
 {% endblock %}

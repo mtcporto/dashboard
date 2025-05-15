@@ -14,14 +14,26 @@ def index():
 @dashboard_bp.route('/projeto/<nome>')
 def projeto(nome):
     caminho = os.path.join(CAMINHO_PROJETOS(), nome)
-    estrutura = []
+    estrutura = {
+        'Modelos': [],
+        'Controladores': [],
+        'Views': []
+    }
 
     for raiz, pastas, arquivos in os.walk(caminho):
+        # Ignorar pastas desnecessárias
+        pastas[:] = [p for p in pastas if p not in ['.git', '.github']]
+
         for nome_arquivo in arquivos:
             caminho_rel = os.path.relpath(os.path.join(raiz, nome_arquivo), caminho)
-            estrutura.append(caminho_rel)
+            if 'models' in raiz or 'model' in caminho_rel:
+                estrutura['Modelos'].append(caminho_rel)
+            elif 'controllers' in raiz or 'controller' in caminho_rel:
+                estrutura['Controladores'].append(caminho_rel)
+            elif 'templates' in raiz or 'view' in caminho_rel:
+                estrutura['Views'].append(caminho_rel)
 
-    return render_template('projeto.html', nome=nome, arquivos=estrutura)
+    return render_template('projeto.html', nome=nome, estrutura=estrutura)
 
 @dashboard_bp.route('/criar_projeto', methods=['POST'])
 def criar_projeto():
