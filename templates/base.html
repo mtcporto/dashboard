@@ -2,13 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Dashboard de Projetos</title>
+  <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
   <header>
-    <a href="{{ url_for('dashboard.index') }}">Dashboard de Projetos</a>
+    <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
   </header>
   <main>
     {% block content %}{% endblock %}

@@ -23,9 +23,17 @@ def projeto(nome):
     for raiz, pastas, arquivos in os.walk(caminho):
         # Ignorar pastas desnecessárias
         pastas[:] = [p for p in pastas if p not in ['.git', '.github']]
-
-        for nome_arquivo in arquivos:
+        
+        # Filtrar arquivos de cache e outros arquivos desnecessários
+        arquivos_filtrados = [a for a in arquivos if not a.endswith('.pyc') and not a.endswith('.pyo')]
+        
+        for nome_arquivo in arquivos_filtrados:
             caminho_rel = os.path.relpath(os.path.join(raiz, nome_arquivo), caminho)
+            
+            # Ignorar arquivos em pastas __pycache__
+            if '__pycache__' in caminho_rel:
+                continue
+                
             if 'models' in raiz or 'model' in caminho_rel:
                 estrutura['Modelos'].append(caminho_rel)
             elif 'controllers' in raiz or 'controller' in caminho_rel:

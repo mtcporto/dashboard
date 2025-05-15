@@ -6,12 +6,76 @@
   <div class="editor-path">
     <strong>Projeto:</strong> {{ nome }} / <strong>Arquivo:</strong> {{ path }}
   </div>
-  <form method="post">
-    <textarea name="conteudo" class="editor">{{ conteudo }}</textarea>
+  <form method="post" id="editor-form">
+    <pre id="editor">{{ conteudo }}</pre>
+    <textarea name="conteudo" id="editor-content" style="display: none;">{{ conteudo }}</textarea>
     <div style="margin-top: 1rem; display: flex; justify-content: space-between;">
       <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn btn-secondary">← Voltar</a>
-      <button type="submit" class="btn">Salvar Alterações</button>
+      <button type="submit" class="btn" id="save-btn">Salvar Alterações (Ctrl+S)</button>
     </div>
   </form>
 </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/vs2015.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ace.js"></script>
+<script>
+  // Configurar o editor Ace
+  document.addEventListener('DOMContentLoaded', function() {
+    const editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    
+    // Tentar determinar o modo baseado na extensão do arquivo
+    const path = "{{ path }}";
+    let mode = "text";
+    
+    if (path.endsWith('.py')) {
+      mode = "ace/mode/python";
+    } else if (path.endsWith('.html')) {
+      mode = "ace/mode/html";
+    } else if (path.endsWith('.js')) {
+      mode = "ace/mode/javascript";
+    } else if (path.endsWith('.css')) {
+      mode = "ace/mode/css";
+    }
+    
+    editor.session.setMode(mode);
+    editor.setOptions({
+      fontSize: "14px",
+      showPrintMargin: false,
+      fontFamily: "Consolas, 'Courier New', monospace",
+      enableBasicAutocompletion: true,
+      enableSnippets: true,
+      enableLiveAutocompletion: true
+    });
+    
+    // Configurar o formulário para salvar o conteúdo do editor
+    const form = document.getElementById('editor-form');
+    const textArea = document.getElementById('editor-content');
+    
+    form.addEventListener('submit', function() {
+      textArea.value = editor.getValue();
+    });
+    
+    // Adicionar atalho Ctrl+S
+    editor.commands.addCommand({
+      name: 'save',
+      bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+      exec: function() {
+        textArea.value = editor.getValue();
+        form.submit();
+      }
+    });
+    
+    // Destaque visual para o botão de salvar
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.addEventListener('mouseover', function() {
+      this.textContent = "Salvar (Ctrl+S)";
+    });
+    
+    saveBtn.addEventListener('mouseout', function() {
+      this.textContent = "Salvar Alterações (Ctrl+S)";
+    });
+  });
+</script>
 {% endblock %}

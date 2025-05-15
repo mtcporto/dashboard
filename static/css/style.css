@@ -24,11 +24,6 @@ header a {
   justify-content: center;
 }
 
-header a:before {
-  content: "🚀";
-  margin-right: 10px;
-}
-
 main {
   max-width: 1200px;
   margin: 0 auto;
@@ -45,18 +40,7 @@ h2 {
 h3 {
   color: #495057;
   margin-top: 2rem;
-  display: flex;
-  align-items: center;
 }
-
-h3:before {
-  margin-right: 10px;
-  font-size: 1.2rem;
-}
-
-h3.modelos:before { content: "📊"; }
-h3.controladores:before { content: "⚙️"; }
-h3.views:before { content: "🖼️"; }
 
 /* Cards para projetos */
 .projetos-grid {
@@ -73,6 +57,8 @@ h3.views:before { content: "🖼️"; }
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
+  height: 150px;
+  position: relative;
 }
 
 .projeto-card:hover {
@@ -87,8 +73,9 @@ h3.views:before { content: "🖼️"; }
 }
 
 .projeto-card .btn {
-  align-self: flex-end;
-  margin-top: auto;
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
 }
 
 /* Botões e links */
@@ -190,6 +177,10 @@ textarea.editor {
   font-size: 14px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  line-height: 1.5;
+  tab-size: 4;
 }
 
 /* Form para criar projeto */
