@@ -72,10 +72,12 @@ h3 {
   font-size: 1.4rem;
 }
 
-.projeto-card .btn {
+.projeto-actions {
   position: absolute;
   bottom: 1.5rem;
   right: 1.5rem;
+  display: flex;
+  gap: 10px;
 }
 
 /* Botões e links */
@@ -102,6 +104,14 @@ h3 {
 
 .btn-secondary:hover {
   background-color: #495057;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+}
+
+.btn-danger:hover {
+  background-color: #bd2130;
 }
 
 /* Arquivo lista */

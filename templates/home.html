@@ -8,7 +8,12 @@
   {% for projeto in projetos %}
     <div class="projeto-card">
       <h3>{{ projeto }}</h3>
-      <a href="{{ url_for('dashboard.projeto', nome=projeto) }}" class="btn">Abrir Projeto</a>
+      <div class="projeto-actions">
+        <a href="{{ url_for('dashboard.projeto', nome=projeto) }}" class="btn">Abrir Projeto</a>
+        <form method="post" action="{{ url_for('dashboard.deletar_projeto', nome=projeto) }}" onsubmit="return confirm('Tem certeza que deseja excluir o projeto {{ projeto }}? Esta ação não pode ser desfeita.');" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Excluir</button>
+        </form>
+      </div>
     </div>
   {% endfor %}
 </div>

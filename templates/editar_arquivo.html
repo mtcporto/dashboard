@@ -7,7 +7,7 @@
     <strong>Projeto:</strong> {{ nome }} / <strong>Arquivo:</strong> {{ path }}
   </div>
   <form method="post" id="editor-form">
-    <pre id="editor">{{ conteudo }}</pre>
+    <div id="editor" style="height: 500px; width: 100%; border-radius: 4px;">{{ conteudo }}</div>
     <textarea name="conteudo" id="editor-content" style="display: none;">{{ conteudo }}</textarea>
     <div style="margin-top: 1rem; display: flex; justify-content: space-between;">
       <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn btn-secondary">← Voltar</a>
@@ -16,18 +16,18 @@
   </form>
 </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/vs2015.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ext-language_tools.js"></script>
 <script>
   // Configurar o editor Ace
   document.addEventListener('DOMContentLoaded', function() {
+    ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
+    editor.setTheme("ace/theme/vs-dark");
     
     // Tentar determinar o modo baseado na extensão do arquivo
     const path = "{{ path }}";
-    let mode = "text";
+    let mode = "ace/mode/text";
     
     if (path.endsWith('.py')) {
       mode = "ace/mode/python";
@@ -37,16 +37,34 @@
       mode = "ace/mode/javascript";
     } else if (path.endsWith('.css')) {
       mode = "ace/mode/css";
+    } else if (path.endsWith('.json')) {
+      mode = "ace/mode/json";
+    } else if (path.endsWith('.md')) {
+      mode = "ace/mode/markdown";
+    } else if (path.endsWith('.xml')) {
+      mode = "ace/mode/xml";
+    } else if (path.endsWith('.sql')) {
+      mode = "ace/mode/sql";
+    } else if (path.endsWith('.sh') || path.endsWith('.bash')) {
+      mode = "ace/mode/sh";
+    } else if (path.endsWith('.txt')) {
+      mode = "ace/mode/text";
     }
     
     editor.session.setMode(mode);
     editor.setOptions({
       fontSize: "14px",
       showPrintMargin: false,
+      showGutter: true,
+      highlightActiveLine: true,
+      displayIndentGuides: true,
       fontFamily: "Consolas, 'Courier New', monospace",
       enableBasicAutocompletion: true,
       enableSnippets: true,
-      enableLiveAutocompletion: true
+      enableLiveAutocompletion: true,
+      scrollPastEnd: 0.5,
+      tabSize: 4,
+      useSoftTabs: true
     });
     
     // Configurar o formulário para salvar o conteúdo do editor
@@ -66,6 +84,31 @@
         form.submit();
       }
     });
+    
+    // Configurar número da linha onde aconteceu erro
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorLine = urlParams.get('errorLine');
+    if (errorLine) {
+      const line = parseInt(errorLine);
+      editor.gotoLine(line, 0, true);
+      editor.session.addMarker(new ace.Range(line-1, 0, line-1, 1), "ace_error-marker", "fullLine");
+    }
+    
+    // Ajuste automático do editor para preencher o espaço disponível
+    function resizeEditor() {
+      const windowHeight = window.innerHeight;
+      const editorTop = document.getElementById('editor').getBoundingClientRect().top;
+      const footerHeight = 70; // Espaço para botões e margem
+      const newHeight = windowHeight - editorTop - footerHeight;
+      
+      if (newHeight > 400) {
+        document.getElementById('editor').style.height = newHeight + 'px';
+        editor.resize();
+      }
+    }
+    
+    window.addEventListener('resize', resizeEditor);
+    resizeEditor();
     
     // Destaque visual para o botão de salvar
     const saveBtn = document.getElementById('save-btn');
