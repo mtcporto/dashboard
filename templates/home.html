@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Meus Projetos</h2>
+
+{% if projetos %}
+<ul>
+  {% for projeto in projetos %}
+    <li><a href="{{ url_for('dashboard.projeto', nome=projeto) }}">{{ projeto }}</a></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>Nenhum projeto encontrado. Crie um novo!</p>
+{% endif %}
+
+<a href="#">+ Novo Projeto</a> <!-- aqui futuramente chamamos uma rota de criação -->
+{% endblock %}

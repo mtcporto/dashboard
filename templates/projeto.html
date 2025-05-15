@@ -1,13 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head><title>Projeto {{ nome }}</title></head>
-<body>
-    <h1>Arquivos de {{ nome }}</h1>
-    <ul>
-        {% for arquivo in arquivos %}
-        <li>{{ arquivo }}</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ url_for('index') }}">← Voltar</a>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Arquivos de {{ nome }}</h2>
+
+<ul>
+  {% for arquivo in arquivos %}
+    <li>{{ arquivo }}</li>
+  {% endfor %}
+</ul>
+
+<a href="{{ url_for('dashboard.index') }}">← Voltar</a>
+{% endblock %}
