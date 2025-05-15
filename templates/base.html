@@ -2,14 +2,35 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Dashboard</title>
+  <title>Dashboard de Projetos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
   <header>
-    <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    <a href="{{ url_for('dashboard.index') }}">Dashboard de Projetos</a>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
+
+  <script>
+    // Adicionar interatividade para as categorias MVC
+    document.addEventListener('DOMContentLoaded', function() {
+      // Capturar todos os headers de categoria
+      const categoriaHeaders = document.querySelectorAll('.categoria-header');
+      
+      categoriaHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          // Toggle para mostrar/esconder o conteúdo
+          const content = this.nextElementSibling;
+          content.style.display = content.style.display === 'none' ? 'block' : 'none';
+          
+          // Mudar visual do cabeçalho quando colapsado/expandido
+          this.classList.toggle('collapsed');
+        });
+      });
+    });
+  </script>
 </body>
 </html>

@@ -4,13 +4,23 @@
 <h2>Arquivos de {{ nome }}</h2>
 
 {% for categoria, arquivos in estrutura.items() %}
-  <h3>{{ categoria }}</h3>
-  <ul>
-    {% for arquivo in arquivos %}
-      <li><a href="{{ url_for('dashboard.editar_arquivo', nome=nome, path=arquivo) }}">{{ arquivo }}</a></li>
-    {% endfor %}
-  </ul>
+  <div class="arquivo-categoria">
+    <div class="categoria-header">
+      <h3 class="{{ categoria|lower }}">{{ categoria }}</h3>
+    </div>
+    <div class="categoria-content">
+      {% if arquivos %}
+        <ul class="file-list">
+          {% for arquivo in arquivos %}
+            <li><a href="{{ url_for('dashboard.editar_arquivo', nome=nome, path=arquivo) }}">{{ arquivo }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Nenhum arquivo encontrado nesta categoria.</p>
+      {% endif %}
+    </div>
+  </div>
 {% endfor %}
 
-<a href="{{ url_for('dashboard.index') }}">← Voltar</a>
+<a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">← Voltar</a>
 {% endblock %}

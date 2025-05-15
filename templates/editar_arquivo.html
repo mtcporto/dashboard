@@ -1,11 +1,17 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Editando {{ path }} em {{ nome }}</h2>
-<form method="post">
-  <textarea name="conteudo" rows="20" cols="80">{{ conteudo }}</textarea>
-  <br>
-  <button type="submit">Salvar</button>
-</form>
-<a href="{{ url_for('dashboard.projeto', nome=nome) }}">← Voltar</a>
+<div class="editor-container">
+  <h2>Editor</h2>
+  <div class="editor-path">
+    <strong>Projeto:</strong> {{ nome }} / <strong>Arquivo:</strong> {{ path }}
+  </div>
+  <form method="post">
+    <textarea name="conteudo" class="editor">{{ conteudo }}</textarea>
+    <div style="margin-top: 1rem; display: flex; justify-content: space-between;">
+      <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn btn-secondary">← Voltar</a>
+      <button type="submit" class="btn">Salvar Alterações</button>
+    </div>
+  </form>
+</div>
 {% endblock %}
