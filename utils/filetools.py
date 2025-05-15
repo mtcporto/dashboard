@@ -1,9 +1,13 @@
 import os
 
 def listar_pastas_projetos(caminho_base):
-    pastas_relevantes = ['dashboard', 'mysite', 'teste']
+    # Lista de pastas que devem ser ignoradas (pastas de sistema e ocultas)
+    pastas_ignoradas = ['.virtualenvs', '.ipython', '.local', '.cache', '.ssh', '__pycache__']
+    
     return [nome for nome in os.listdir(caminho_base)
-            if nome in pastas_relevantes and os.path.isdir(os.path.join(caminho_base, nome))]
+            if os.path.isdir(os.path.join(caminho_base, nome)) and 
+               not nome.startswith('.') and 
+               nome not in pastas_ignoradas]
 
 # Atualizar listar_projetos para usar listar_pastas_projetos
 listar_projetos = listar_pastas_projetos

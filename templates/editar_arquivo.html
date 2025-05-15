@@ -18,12 +18,54 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ace.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ext-language_tools.js"></script>
+<style>
+  .ace_editor {
+    background-color: #282C34 !important;
+  }
+  
+  .ace_keyword {
+    color: #C678DD !important;
+  }
+  
+  .ace_tag {
+    color: #E06C75 !important;
+  }
+  
+  .ace_attribute-name {
+    color: #98C379 !important;
+  }
+  
+  .ace_attribute-value, .ace_string {
+    color: #E5C07B !important;
+  }
+  
+  .ace_comment {
+    color: #5C6370 !important;
+    font-style: italic !important;
+  }
+  
+  .ace_operator {
+    color: #56B6C2 !important;
+  }
+  
+  .ace_identifier {
+    color: #ABB2BF !important;
+  }
+  
+  .ace_function {
+    color: #61AFEF !important;
+  }
+  
+  .ace_constant {
+    color: #D19A66 !important;
+  }
+</style>
 <script>
   // Configurar o editor Ace
   document.addEventListener('DOMContentLoaded', function() {
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor");
-    editor.setTheme("ace/theme/vs-dark");
+    editor.setTheme("ace/theme/monokai");
     
     // Tentar determinar o modo baseado na extensão do arquivo
     const path = "{{ path }}";
