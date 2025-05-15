@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Meus Projetos</title></head>
+<body>
+    <h1>Projetos</h1>
+    <ul>
+        {% for projeto in projetos %}
+        <li><a href="{{ url_for('visualizar_projeto', nome=projeto) }}">{{ projeto }}</a></li>
+        {% endfor %}
+    </ul>
+    <form method="post" action="{{ url_for('criar_projeto') }}">
+        <input type="text" name="nome" placeholder="Nome do novo projeto" required>
+        <button type="submit">Criar Projeto</button>
+    </form>
+</body>
+</html>
