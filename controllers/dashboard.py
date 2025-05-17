@@ -433,6 +433,40 @@ def reparar_projeto(nome):
         return render_template('projeto_error.html', nome=nome, 
                               erro="Projeto não encontrado. Não foi possível reparar."), 404
     
+    # Verificar e corrigir o app.py do projeto para resolver problemas de importação comuns
+    app_path = os.path.join(projeto_path, 'app.py')
+    app_fixed = False
+    
+    if os.path.exists(app_path):
+        try:
+            with open(app_path, 'r') as f:
+                app_content = f.read()
+            
+            # Verifica problemas comuns de importação do controlador
+            if "from controllers import main_controller" in app_content:
+                app_content = app_content.replace(
+                    "from controllers import main_controller", 
+                    "from controllers.main_controller import main_bp")
+                app_fixed = True
+            elif "import controllers.main_controller" in app_content and "main_bp" not in app_content:
+                app_content = app_content.replace(
+                    "import controllers.main_controller", 
+                    "from controllers.main_controller import main_bp")
+                app_fixed = True
+            elif "controllers.main_controller" in app_content and "register_blueprint" in app_content and "main_bp" not in app_content:
+                app_content = app_content.replace(
+                    "controllers.main_controller", 
+                    "controllers.main_controller.main_bp")
+                app_fixed = True
+            
+            # Se encontrou e corrigiu problemas, salva o arquivo
+            if app_fixed:
+                with open(app_path, 'w') as f:
+                    f.write(app_content)
+                    
+        except Exception as e:
+            print(f"Erro ao verificar app.py: {str(e)}")
+    
     # Verificar e criar diretórios essenciais
     diretorios = [
         'controllers',
@@ -452,11 +486,42 @@ def reparar_projeto(nome):
     init_py_content = "# Arquivo __init__.py para configurar o pacote"
     init_dirs = ['controllers', 'models', 'utils']
     
-    for init_dir in init_dirs:
-        init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
-        if not os.path.exists(init_file_path):
-            with open(init_file_path, 'w', encoding='utf-8') as f:
-                f.write(init_py_content)
+    # Cria estrutura especial para controllers/__init__.py para garantir importação correta
+    controllers_init = os.path.join(projeto_path, 'controllers', '__init__.py')
+    main_controller_path = os.path.join(projeto_path, 'controllers', 'main_controller.py')
+    
+    # Se o main_controller.py existe, configura o __init__.py para importá-lo corretamente
+    if os.path.exists(main_controller_path):
+        # Verificar o arquivo para detectar o nome do blueprint
+        try:
+            with open(main_controller_path, 'r') as f:
+                controller_content = f.read()
+            
+            # Procura por padrões comuns de definição de blueprint
+            import re
+            bp_name = "main_bp"  # valor padrão
+            bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', controller_content)
+            if bp_match:
+                bp_name = bp_match.group(1)
+                
+            # Cria ou substitui o __init__.py com a importação correta
+            with open(controllers_init, 'w', encoding='utf-8') as f:
+                f.write("# Arquivo __init__.py para o pacote controllers\n")
+                f.write(f"# Configurado para importar {bp_name} automaticamente\n")
+                f.write(f"from controllers.main_controller import {bp_name}\n")
+                
+        except Exception as e:
+            # Se falhar, usa a abordagem padrão
+            if not os.path.exists(controllers_init):
+                with open(controllers_init, 'w', encoding='utf-8') as f:
+                    f.write(init_py_content)
+    else:
+        # Para os outros diretórios
+        for init_dir in init_dirs:
+            init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
+            if not os.path.exists(init_file_path):
+                with open(init_file_path, 'w', encoding='utf-8') as f:
+                    f.write(init_py_content)
     
     # Verificar e criar os arquivos de template
     arquivos_template = {
@@ -569,5 +634,21 @@ def reparar_projeto(nome):
     except Exception as e:
         print(f"Erro ao reparar banco de dados: {str(e)}")
     
-    # Redirecionar para a página do projeto
+    # Prepara mensagem para o usuário sobre o que foi reparado
+    mensagem = "Projeto reparado com sucesso. "
+    detalhes = []
+    
+    if app_fixed:
+        detalhes.append("Corrigimos problemas de importação no app.py")
+    
+    if os.path.exists(controllers_init) and "from controllers.main_controller import" in open(controllers_init).read():
+        detalhes.append("Configuramos os controladores para importação correta")
+    
+    if os.path.exists(os.path.join(projeto_path, 'instance')):
+        detalhes.append("Configuramos o diretório instance para banco de dados")
+        
+    if detalhes:
+        mensagem += "Melhorias: " + ", ".join(detalhes) + "."
+    
+    # Redirecionar para a página do projeto com mensagem de sucesso
     return redirect(url_for('dashboard.projeto', nome=nome))

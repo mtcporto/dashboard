@@ -122,6 +122,37 @@ def register_project_blueprints():
                                             controllers_dir = os.path.join(projeto_path, 'controllers')
                                             os.makedirs(controllers_dir, exist_ok=True)
                                             
+                                            # Verificar se o PYTHONPATH está correto
+                                            # Verificar app.py para possíveis problemas de importação
+                                            app_path = os.path.join(projeto_path, 'app.py')
+                                            app_fixed = False
+                                            
+                                            if os.path.exists(app_path):
+                                                try:
+                                                    with open(app_path, 'r') as f:
+                                                        app_content = f.read()
+                                                        
+                                                    # Verifica padrões problemáticos de importação
+                                                    if "from controllers import main_controller" in app_content:
+                                                        # Corrige para importação correta
+                                                        app_content = app_content.replace(
+                                                            "from controllers import main_controller", 
+                                                            "from controllers.main_controller import main_bp")
+                                                        app_fixed = True
+                                                    elif "import controllers.main_controller" in app_content and "main_bp" not in app_content:
+                                                        # Adiciona referência ao blueprint
+                                                        app_content = app_content.replace(
+                                                            "import controllers.main_controller", 
+                                                            "from controllers.main_controller import main_bp")
+                                                        app_fixed = True
+                                                        
+                                                    # Se encontrou e corrigiu problemas, salva o arquivo
+                                                    if app_fixed:
+                                                        with open(app_path, 'w') as f:
+                                                            f.write(app_content)
+                                                except Exception:
+                                                    pass
+                                            
                                             # Primeiro verifica se existe controller.py em vez de main_controller.py
                                             controller_file_path = os.path.join(controllers_dir, 'controller.py')
                                             if os.path.exists(controller_file_path):
@@ -142,9 +173,13 @@ def register_project_blueprints():
                                                             f.write("# Arquivo de compatibilidade\n")
                                                             f.write("from controllers.main_controller import *\n")
                                                     
+                                                    msg = "Encontramos um controller.py e criamos main_controller.py para compatibilidade."
+                                                    if app_fixed:
+                                                        msg += " Também corrigimos problemas de importação no app.py."
+                                                    
                                                     return render_template('projeto_error.html', 
                                                                 nome=nome_projeto, 
-                                                                erro=f"Encontramos um controller.py e criamos main_controller.py para compatibilidade. Por favor, tente novamente."), 500
+                                                                erro=f"{msg} Por favor, tente novamente."), 500
                                                 except Exception as copy_error:
                                                     pass  # Se falhar, continua para o código abaixo
                                             
