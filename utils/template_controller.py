@@ -3,7 +3,8 @@ from models.database import db
 from models.exemplo import Exemplo
 
 # Blueprint que poderá ser acessado diretamente na URL
-main_bp = Blueprint('main', __name__, url_prefix='')
+# Nota: Ao acessar pelo dashboard, o blueprint será registrado com prefixo /nome_projeto
+main_bp = Blueprint('main_bp', __name__, url_prefix='')
 
 @main_bp.route('/')
 def index():

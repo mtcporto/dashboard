@@ -48,17 +48,23 @@ def register_project_blueprints():
                 route_key = f"project_{nome_projeto}"
                 if route_key not in rotas_criadas:
                     # Criamos uma função closure para preservar o nome do projeto
-                    def create_blueprint(nome):
-                        bp = Blueprint(nome, __name__, url_prefix=f'/{nome}')
+                    # Usamos uma função factory para criar blueprints
+                    # com escopo adequado para cada projeto
+                    def create_project_blueprint(nome_projeto):
+                        # Nome único para evitar colisões
+                        blueprint_name = f'project_{nome_projeto}'
+                        bp = Blueprint(blueprint_name, __name__, url_prefix=f'/{nome_projeto}')
                         
-                        @bp.route('/')
-                        def index():
-                            return redirect(url_for('dashboard.projeto', nome=nome))
+                        # Definimos uma função closure para capturar o nome do projeto
+                        def index_route():
+                            return redirect(url_for('dashboard.projeto', nome=nome_projeto))
                         
+                        # Registramos a rota no blueprint
+                        bp.add_url_rule('/', 'index', index_route)
                         return bp
                     
-                    # Registramos o blueprint
-                    bp = create_blueprint(nome_projeto)
+                    # Criamos o blueprint com o nome do projeto
+                    bp = create_project_blueprint(nome_projeto)
                     app.register_blueprint(bp)
                     
                     rotas_criadas.add(route_key)
@@ -69,6 +75,22 @@ def register_project_blueprints():
 
 # Registrar os blueprints dos projetos
 register_project_blueprints()
+
+# Rota de fallback para projetos não registrados explicitamente
+@app.route('/<nome_projeto>/')
+@app.route('/<nome_projeto>')
+def dynamic_project_route(nome_projeto):
+    """Rota de fallback para qualquer projeto que ainda não tenha sido registrado"""
+    # Verifica se o projeto existe na pasta de projetos
+    from utils.filetools import listar_projetos
+    projetos = listar_projetos(BASE_DIR)
+    
+    if nome_projeto in projetos:
+        # Se o projeto existir, redireciona para a página do projeto
+        return redirect(url_for('dashboard.projeto', nome=nome_projeto))
+    else:
+        # Se não existir, retorna uma página 404
+        return render_template('404.html', projeto=nome_projeto), 404
 
 # Iniciar servidor se executado diretamente
 if __name__ == '__main__':

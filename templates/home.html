@@ -15,7 +15,7 @@
       <h3>{{ projeto }}</h3>
       <div class="projeto-actions">
         <a href="{{ url_for('dashboard.projeto', nome=projeto) }}" class="btn">Gerenciar Projeto</a>
-        <a href="{{ url_for(projeto + '.index') }}" class="btn btn-primary">Acessar Projeto</a>
+        <a href="/{{ projeto }}" class="btn btn-primary">Acessar Projeto</a>
         <form method="post" action="{{ url_for('dashboard.deletar_projeto', nome=projeto) }}" onsubmit="return confirm('Tem certeza que deseja excluir o projeto {{ projeto }}? Esta ação não pode ser desfeita.');" style="display: inline;">
           <button type="submit" class="btn btn-danger">Excluir</button>
         </form>

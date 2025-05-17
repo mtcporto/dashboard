@@ -20,7 +20,12 @@ from controllers.main_controller import main_bp
 
 # Registrar o blueprint com prefixo vazio para funcionar como aplicação principal
 # Isso permitirá acesso através de https://devosflask.pythonanywhere.com/nome_do_projeto
-app.register_blueprint(main_bp, url_prefix='')
+app.register_blueprint(main_bp)
+
+# Registramos uma página para detectar o projeto no sistema de dashboard
+@app.route('/dashboard_detect')
+def dashboard_detect():
+    return "Este é um projeto Flask válido"
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -62,13 +62,13 @@
         <p>Este projeto está sendo executado em um servidor Flask separado.</p>
         <div class="spinner"></div>
         <p>Redirecionando para a aplicação...</p>
-        <a href="{{ url_for(nome + '.index') if endpoint else '/' + nome }}" class="btn">Ir para a aplicação</a>
+        <a href="/{{ nome }}" class="btn">Ir para a aplicação</a>
     </div>
 
     <script>
         // Tenta redirecionar automaticamente após 2 segundos
         setTimeout(function() {
-            window.location.href = "{{ url_for(nome + '.index') if endpoint else '/' + nome }}";
+            window.location.href = "/{{ nome }}";
         }, 2000);
     </script>
 </body>
