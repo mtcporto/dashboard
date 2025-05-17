@@ -29,90 +29,43 @@ def index():
 # Função para registrar projetos dinamicamente
 def register_project_blueprints():
     """Registra blueprints para todos os projetos na pasta de projetos"""
-    from utils.filetools import listar_projetos, importar_blueprint_projeto
+    from utils.filetools import listar_projetos
     
     projetos = listar_projetos(BASE_DIR)
     rotas_criadas = set()  # Conjunto para rastrear quais rotas já foram registradas
     
     for nome_projeto in projetos:
-        # Ignora o dashboard que já está registrado
-        if nome_projeto == 'dashboard' or nome_projeto == '__pycache__':
+        # Ignora o dashboard que já está registrado e outros diretórios especiais
+        if nome_projeto == 'dashboard' or nome_projeto == '__pycache__' or nome_projeto.startswith('.'):
             continue
         
         projeto_path = os.path.join(BASE_DIR, nome_projeto)
-        app_py_path = os.path.join(projeto_path, 'app.py')
         
-        # Verifica se é uma pasta válida com arquivos Python
+        # Verifica se é uma pasta válida
         if os.path.isdir(projeto_path):
             try:
-                # Modo direto: Importa o app.py do projeto e verifica se tem blueprint
-                if os.path.exists(app_py_path):
-                    try:
-                        # Adiciona o caminho do projeto ao sys.path
-                        sys.path.insert(0, os.path.dirname(projeto_path))
-                        
-                        # Importa o módulo app.py usando importlib
-                        spec = importlib.util.spec_from_file_location(f"{nome_projeto}.app", app_py_path)
-                        projeto_app = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(projeto_app)
-                        
-                        # Verifica se há um Blueprint ou Flask app
-                        found_blueprint = None
-                        
-                        # Procura por blueprints comuns
-                        for attr_name in dir(projeto_app):
-                            attr = getattr(projeto_app, attr_name)
-                            if isinstance(attr, Blueprint):
-                                found_blueprint = attr
-                                break
-                        
-                        # Se encontrou um blueprint, registra com prefixo
-                        if found_blueprint:
-                            # Garante que não há duplicação de rotas
-                            route_key = f"blueprint_{nome_projeto}"
-                            if route_key not in rotas_criadas:
-                                app.register_blueprint(found_blueprint, url_prefix=f'/{nome_projeto}')
-                                rotas_criadas.add(route_key)
-                                print(f"Registrado blueprint para projeto: {nome_projeto}")
-                            continue
-                    except Exception as e:
-                        print(f"Erro ao importar app.py do projeto {nome_projeto}: {e}")
-                    finally:
-                        # Limpa o sys.path
-                        if os.path.dirname(projeto_path) in sys.path:
-                            sys.path.remove(os.path.dirname(projeto_path))
-                
-                # Modo alternativo: Cria rota de redirecionamento
-                route_key = f"redirect_{nome_projeto}"
+                # Cria um blueprint simples para o projeto
+                route_key = f"project_{nome_projeto}"
                 if route_key not in rotas_criadas:
-                    # Cria função de rota dinâmica para cada projeto
-                    def create_project_route(projeto):
-                        def project_route(path=""):
-                            # Gera um número de porta aleatório entre 5000-5999 baseado no nome do projeto
-                            # Isso é apenas para demonstração, em produção a porta seria fixa ou configurada
-                            import hashlib
-                            hash_obj = hashlib.md5(projeto.encode())
-                            porta = 5000 + int(hash_obj.hexdigest(), 16) % 1000
-                            
-                            return render_template('projeto_redirect.html', 
-                                                  nome=projeto, 
-                                                  porta=porta)
-                        return project_route
+                    # Criamos uma função closure para preservar o nome do projeto
+                    def create_blueprint(nome):
+                        bp = Blueprint(nome, __name__, url_prefix=f'/{nome}')
+                        
+                        @bp.route('/')
+                        def index():
+                            return redirect(url_for('dashboard.projeto', nome=nome))
+                        
+                        return bp
                     
-                    # Registra rotas para o projeto
-                    app.add_url_rule(f'/{nome_projeto}', 
-                                    endpoint=f"project_{nome_projeto}", 
-                                    view_func=create_project_route(nome_projeto))
-                    
-                    app.add_url_rule(f'/{nome_projeto}/<path:path>', 
-                                    endpoint=f"project_path_{nome_projeto}", 
-                                    view_func=create_project_route(nome_projeto))
+                    # Registramos o blueprint
+                    bp = create_blueprint(nome_projeto)
+                    app.register_blueprint(bp)
                     
                     rotas_criadas.add(route_key)
-                    print(f"Criada rota de redirecionamento para: {nome_projeto}")
+                    print(f"Registrado blueprint para projeto: {nome_projeto}")
                     
             except Exception as e:
-                print(f"Erro ao registrar rotas para {nome_projeto}: {e}")
+                print(f"Erro ao registrar blueprint para {nome_projeto}: {e}")
 
 # Registrar os blueprints dos projetos
 register_project_blueprints()
