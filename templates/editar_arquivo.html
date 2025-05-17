@@ -26,14 +26,17 @@
   </form>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ace.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ext-language_tools.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-github_dark.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-twilight.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-tomorrow_night.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-monokai.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-dracula.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-solarized_dark.js"></script>
+<!-- Carregar a versão mais estável do Ace sem alterações anteriores que podem ter afetado o funcionamento -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
+<!-- Carregar pacote completo de temas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-github_dark.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-twilight.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-tomorrow_night.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-monokai.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-dracula.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/theme-solarized_dark.js"></script>
 <style>
   .theme-selector {
     padding: 8px;
@@ -44,52 +47,20 @@
     cursor: pointer;
   }
   
-  .ace_editor {
-    background-color: #282C34 !important;
-  }
-  
-  .ace_keyword {
-    color: #C678DD !important;
-  }
-  
-  .ace_tag {
-    color: #E06C75 !important;
-  }
-  
-  .ace_attribute-name {
-    color: #98C379 !important;
-  }
-  
-  .ace_attribute-value, .ace_string {
-    color: #E5C07B !important;
-  }
-  
-  .ace_comment {
-    color: #5C6370 !important;
-    font-style: italic !important;
-  }
-  
-  .ace_operator {
-    color: #56B6C2 !important;
-  }
-  
-  .ace_identifier {
-    color: #ABB2BF !important;
-  }
-  
-  .ace_function {
-    color: #61AFEF !important;
-  }
-  
-  .ace_constant {
-    color: #D19A66 !important;
-  }
+  /* Removendo estilos CSS personalizados que podem estar interferindo com os temas do Ace */
+  /* Deixando os estilos serem aplicados pelos temas do Ace diretamente */
 </style>
 <script>
   // Configurar o editor Ace
   document.addEventListener('DOMContentLoaded', function() {
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor");
+    
+    // Garantir que os temas estejam carregados corretamente
+    const themes = ['github_dark', 'twilight', 'tomorrow_night', 'monokai', 'dracula', 'solarized_dark'];
+    themes.forEach(theme => {
+      ace.config.loadModule("ace/theme/" + theme);
+    });
     
     // Configurar tema padrão (GitHub Dark)
     const lastTheme = localStorage.getItem('ace_editor_theme') || 'github_dark';
@@ -193,10 +164,26 @@
     
     // Adicionar lógica de seleção de tema
     const themeSelector = document.getElementById('theme-selector');
+    
+    // Função para aplicar o tema
+    function applyTheme(themeName) {
+      // Forçar o carregamento do tema
+      ace.config.loadModule("ace/theme/" + themeName, function() {
+        editor.setTheme("ace/theme/" + themeName);
+        console.log("Tema aplicado:", themeName);
+      });
+      localStorage.setItem('ace_editor_theme', themeName);
+    }
+    
+    // Aplicar tema inicial
+    setTimeout(function() {
+      applyTheme(lastTheme);
+    }, 100);
+    
+    // Ao mudar o tema
     themeSelector.addEventListener('change', function() {
       const selectedTheme = this.value;
-      editor.setTheme("ace/theme/" + selectedTheme);
-      localStorage.setItem('ace_editor_theme', selectedTheme);
+      applyTheme(selectedTheme);
     });
   });
 </script>
