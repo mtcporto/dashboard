@@ -413,10 +413,19 @@ def dynamic_project_route(nome_projeto, path):
                                     with open(controller_file, 'w') as f:
                                         f.write(controller_content)
                                     
-                                    # Criar __init__.py na pasta controllers
+                                                        # Criar __init__.py na pasta controllers
                                     init_file = os.path.join(controllers_dir, '__init__.py')
                                     with open(init_file, 'w') as f:
-                                        f.write("# Arquivo __init__.py para o pacote controllers")
+                                        f.write("# Arquivo __init__.py para o pacote controllers\n")
+                                        f.write("# Configuração automática para garantir importações corretas\n")
+                                        f.write("import os\n")
+                                        f.write("import sys\n\n")
+                                        f.write("# Garantir que o diretório pai está no PYTHONPATH\n")
+                                        f.write("_parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))\n")
+                                        f.write("if _parent_dir not in sys.path:\n")
+                                        f.write("    sys.path.insert(0, _parent_dir)\n\n")
+                                        f.write("# Exportar main_bp diretamente para permitir import from controllers\n")
+                                        f.write("from .main_controller import main_bp\n")
                                     
                                     return render_template('projeto_error.html', 
                                                       nome=nome_projeto, 

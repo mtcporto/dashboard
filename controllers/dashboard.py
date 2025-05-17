@@ -459,6 +459,38 @@ def reparar_projeto(nome):
                     "controllers.main_controller.main_bp")
                 app_fixed = True
             
+            # Solução ainda mais robusta: tenta simplesmente substituir toda a seção de importação do controlador
+            # Esta é uma abordagem mais agressiva, mas pode resolver problemas sutis de importação
+            if "controllers.main_controller" in app_content and not app_fixed:
+                import re
+                # Tenta encontrar e substituir o padrão de importação e registro com o padrão correto
+                pattern = r"(?s)(# *Importar.*?controllers.*?main_controller.*?\n)(.*?)(app\.register_blueprint.*?\))"
+                replacement = "\n# Importar e registrar controladores (corrigido automaticamente)\nfrom controllers.main_controller import main_bp\n\n# Registrar o blueprint\napp.register_blueprint(main_bp)"
+                
+                if re.search(pattern, app_content):
+                    app_content = re.sub(pattern, replacement, app_content)
+                    app_fixed = True
+                else:
+                    # Se não conseguiu encontrar o padrão específico, faz um fallback para uma abordagem mais simples
+                    # Verifica se precisa adicionar a importação correta
+                    if "from controllers.main_controller import main_bp" not in app_content:
+                        # Encontra onde importações normalmente estariam
+                        after_flask_import = app_content.find("from flask import") + 1
+                        if after_flask_import > 0:
+                            import_pos = app_content.find("\n\n", after_flask_import)
+                            if import_pos > 0:
+                                app_content = app_content[:import_pos] + "\n\n# Importação corrigida automaticamente\nfrom controllers.main_controller import main_bp" + app_content[import_pos:]
+                                app_fixed = True
+                    
+                    # Verifica se precisa registrar o blueprint
+                    if "app.register_blueprint(main_bp)" not in app_content:
+                        app_pos = app_content.find("app = Flask(__name__)") + 1
+                        if app_pos > 0:
+                            insert_pos = app_content.find("\n\n", app_pos)
+                            if insert_pos > 0:
+                                app_content = app_content[:insert_pos] + "\n\n# Registro de blueprint corrigido automaticamente\napp.register_blueprint(main_bp)" + app_content[insert_pos:]
+                                app_fixed = True
+            
             # Se encontrou e corrigiu problemas, salva o arquivo
             if app_fixed:
                 with open(app_path, 'w') as f:
@@ -508,7 +540,9 @@ def reparar_projeto(nome):
             with open(controllers_init, 'w', encoding='utf-8') as f:
                 f.write("# Arquivo __init__.py para o pacote controllers\n")
                 f.write(f"# Configurado para importar {bp_name} automaticamente\n")
-                f.write(f"from controllers.main_controller import {bp_name}\n")
+                f.write(f"# Para compatibilidade direta em importações simples\n")
+                # IMPORTANTE: Em vez de importar de controllers.main_controller, colocamos a exportação direta
+                f.write(f"from .main_controller import {bp_name}\n")
                 
         except Exception as e:
             # Se falhar, usa a abordagem padrão
@@ -603,6 +637,17 @@ def reparar_projeto(nome):
         if not os.path.exists(app_db_path):
             conn = sqlite3.connect(app_db_path)
             conn.close()
+            
+        # Criar um arquivo especial para ajudar com importações no PythonAnywhere
+        pathfix_file = os.path.join(projeto_path, 'pathfix.py')
+        with open(pathfix_file, 'w') as f:
+            f.write("# Arquivo criado automaticamente para ajudar com importações no PythonAnywhere\n")
+            f.write("import os\n")
+            f.write("import sys\n\n")
+            f.write("# Adiciona o diretório atual ao sys.path\n")
+            f.write("current_dir = os.path.abspath(os.path.dirname(__file__))\n")
+            f.write("if current_dir not in sys.path:\n")
+            f.write("    sys.path.insert(0, current_dir)\n")
             
         # Verificar o conteúdo do arquivo models/database.py
         database_path = os.path.join(projeto_path, 'models', 'database.py')
