@@ -2,7 +2,7 @@ import os
 import sys
 import importlib.util
 from datetime import datetime
-from flask import Flask, Blueprint, render_template, redirect, url_for, request
+from flask import Flask, Blueprint, render_template, redirect, url_for, request, _request_ctx_stack
 
 # Define base directory as parent of dashboard dir
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -56,43 +56,69 @@ def register_project_blueprints():
                         bp = Blueprint(blueprint_name, __name__, url_prefix=f'/{nome_projeto}')
                         
                         # Define uma closure para servir os arquivos do projeto
-                        def serve_project():
+                        def serve_project_root():
                             # Verifica se o projeto tem um app.py para ser executado diretamente
                             projeto_app_path = os.path.join(projeto_path, 'app.py')
                             if os.path.exists(projeto_app_path):
-                                # Para o PythonAnywhere, não podemos executar a aplicação diretamente
-                                # Vamos criar um proxy de redirecionamento que permitirá o uso do subdomínio
-                                try:
-                                    # URL base para o ambiente PythonAnywhere com subdomínio para o projeto
-                                    hostname = request.host.split('.')
-                                    username = hostname[0] if hostname else "devosflask"  # Nome de usuário PythonAnywhere
-                                    
-                                    # Construímos a URL recomendada para o projeto
-                                    subdomain_url = f"http://{nome_projeto}.{username}.pythonanywhere.com"
-                                    
-                                    # Verificamos se o projeto é válido tentando importar o app.py
-                                    # Isso apenas valida que é um projeto Flask, mas não executa o código
-                                    with open(projeto_app_path, 'r') as f:
-                                        if 'Flask' in f.read():
-                                            return render_template('projeto_redirect.html', nome=nome_projeto, 
-                                                                 subdomain_url=subdomain_url, 
-                                                                 projeto_path=f"/home/{username}/{nome_projeto}")
-                                        else:
-                                            # Se não for um app Flask válido, mostra um erro
-                                            return render_template('projeto_error.html', 
-                                                                 nome=nome_projeto, 
-                                                                 erro="O arquivo app.py não parece ser uma aplicação Flask válida"), 500
-                                except Exception as e:
-                                    # Em caso de erro ao carregar o módulo, mostra o erro
-                                    return render_template('projeto_error.html', 
-                                                          nome=nome_projeto, 
-                                                          erro=f"Erro ao executar projeto: {str(e)}"), 500
+                                # Executar o projeto diretamente na mesma instância
+                                return execute_project_app(projeto_path, projeto_app_path, nome_projeto, '/')
                             # Se não encontrou app.py, redireciona para gerenciamento no dashboard
                             else:
                                 return redirect(url_for('dashboard.projeto', nome=nome_projeto))
                         
-                        # Registramos a rota no blueprint
-                        bp.add_url_rule('/', 'index', serve_project)
+                        # Função para rotas com caminhos
+                        def serve_project_path(path):
+                            projeto_app_path = os.path.join(projeto_path, 'app.py')
+                            if os.path.exists(projeto_app_path):
+                                # Executa com o caminho específico
+                                return execute_project_app(projeto_path, projeto_app_path, nome_projeto, '/' + path)
+                            else:
+                                return redirect(url_for('dashboard.projeto', nome=nome_projeto))
+                        
+                        # Função que executa o app do projeto
+                        def execute_project_app(projeto_path, app_path, nome_projeto, path_override=None):
+                            try:
+                                # Guarda o caminho original
+                                caminho_original = request.environ.get('PATH_INFO', '/')
+                                
+                                # Ajusta o caminho para o projeto
+                                if path_override is not None:
+                                    request.environ['PATH_INFO'] = path_override
+                                
+                                # Adiciona o caminho do projeto ao sys.path
+                                sys.path.insert(0, projeto_path)
+                                
+                                # Importa o módulo app.py do projeto
+                                spec = importlib.util.spec_from_file_location("project_app", app_path)
+                                project_module = importlib.util.module_from_spec(spec)
+                                spec.loader.exec_module(project_module)
+                                
+                                # Obtém a aplicação Flask do módulo
+                                if hasattr(project_module, 'app'):
+                                    # Executa a requisição no contexto do projeto
+                                    response = project_module.app.full_dispatch_request()
+                                    return response
+                                else:
+                                    # Se não encontrar a aplicação Flask, exibe um erro
+                                    return render_template('projeto_error.html', 
+                                                          nome=nome_projeto, 
+                                                          erro="O arquivo app.py não possui uma aplicação Flask válida"), 500
+                            except Exception as e:
+                                # Em caso de erro ao carregar o módulo, mostra o erro
+                                return render_template('projeto_error.html', 
+                                                      nome=nome_projeto, 
+                                                      erro=f"Erro ao executar projeto: {str(e)}"), 500
+                            finally:
+                                # Restaura o caminho original
+                                if path_override is not None:
+                                    request.environ['PATH_INFO'] = caminho_original
+                                # Limpa o sys.path
+                                if projeto_path in sys.path:
+                                    sys.path.remove(projeto_path)
+                        
+                        # Registramos as rotas no blueprint
+                        bp.add_url_rule('/', 'index', serve_project_root)
+                        bp.add_url_rule('/<path:path>', 'path', serve_project_path)
                         return bp
                     
                     # Criamos o blueprint com o nome do projeto
@@ -109,9 +135,9 @@ def register_project_blueprints():
 register_project_blueprints()
 
 # Rota de fallback para projetos não registrados explicitamente
-@app.route('/<nome_projeto>/')
-@app.route('/<nome_projeto>')
-def dynamic_project_route(nome_projeto):
+@app.route('/<nome_projeto>/', defaults={'path': ''})
+@app.route('/<nome_projeto>/<path:path>')
+def dynamic_project_route(nome_projeto, path):
     """Rota de fallback para qualquer projeto que ainda não tenha sido registrado"""
     # Verifica se o projeto existe na pasta de projetos
     from utils.filetools import listar_projetos
@@ -123,33 +149,58 @@ def dynamic_project_route(nome_projeto):
         projeto_app_path = os.path.join(projeto_path, 'app.py')
         
         if os.path.exists(projeto_app_path):
-            # Para o PythonAnywhere, não podemos executar a aplicação diretamente
-            # Vamos criar um proxy de redirecionamento que permitirá o uso do subdomínio
+            # Executar o projeto diretamente na mesma instância
             try:
-                # URL base para o ambiente PythonAnywhere com subdomínio para o projeto
-                hostname = request.host.split('.')
-                username = hostname[0] if hostname else "devosflask"  # Nome de usuário PythonAnywhere
+                # Modifica o caminho da URL para simular a execução no diretório raiz do projeto
+                # Isso permite que o Flask do projeto rode como se estivesse em sua própria raiz
+                caminho_original = request.path
+                if path:
+                    # Preserva o PATH_INFO para rotas aninhadas (/nome_projeto/alguma/rota)
+                    request.environ['PATH_INFO'] = '/' + path
+                else:
+                    # Define PATH_INFO para raiz do projeto (/nome_projeto/)
+                    request.environ['PATH_INFO'] = '/'
                 
-                # Construímos a URL recomendada para o projeto
-                subdomain_url = f"http://{nome_projeto}.{username}.pythonanywhere.com"
+                # Adiciona o caminho ao sys.path temporariamente
+                sys.path.insert(0, projeto_path)
                 
-                # Verificamos se o projeto é válido tentando importar o app.py
-                # Isso apenas valida que é um projeto Flask, mas não executa o código
-                with open(projeto_app_path, 'r') as f:
-                    if 'Flask' in f.read():
-                        return render_template('projeto_redirect.html', nome=nome_projeto, 
-                                              subdomain_url=subdomain_url, 
-                                              projeto_path=f"/home/{username}/{nome_projeto}")
-                    else:
-                        # Se não for um app Flask válido, mostra um erro
+                # Importa o módulo app.py do projeto usando importlib
+                spec = importlib.util.spec_from_file_location("project_app", projeto_app_path)
+                project_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(project_module)
+                
+                # Obtém a aplicação Flask do módulo
+                if hasattr(project_module, 'app'):
+                    try:
+                        # Função start_response para WSGI
+                        def start_response(status, headers, exc_info=None):
+                            return None
+                            
+                        # Redirecionar a solicitação para o app do projeto
+                        response = project_module.app.full_dispatch_request()
+                        return response
+                    except Exception as e:
+                        # Se houver erro na execução da requisição
                         return render_template('projeto_error.html', 
                                               nome=nome_projeto, 
-                                              erro="O arquivo app.py não parece ser uma aplicação Flask válida"), 500
+                                              erro=f"Erro na execução do projeto: {str(e)}"), 500
+                    finally:
+                        # Restaura o PATH_INFO original
+                        request.environ['PATH_INFO'] = caminho_original
+                else:
+                    # Se não encontrar a aplicação Flask, exibe um erro
+                    return render_template('projeto_error.html', 
+                                          nome=nome_projeto, 
+                                          erro="O arquivo app.py não possui uma aplicação Flask válida"), 500
             except Exception as e:
                 # Em caso de erro ao carregar o módulo, mostra o erro
                 return render_template('projeto_error.html', 
                                       nome=nome_projeto, 
                                       erro=f"Erro ao executar projeto: {str(e)}"), 500
+            finally:
+                # Limpa o sys.path
+                if projeto_path in sys.path:
+                    sys.path.remove(projeto_path)
         else:
             # Se não tiver app.py, vai para gerenciamento
             return redirect(url_for('dashboard.projeto', nome=nome_projeto))

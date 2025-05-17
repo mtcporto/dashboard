@@ -49,25 +49,27 @@ from app import app as application</pre>
     </li>
     
     <li>
-      <h3>Configure um subdomínio</h3>
-      <p>Para acessar seu projeto diretamente pela URL <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code>, você deve configurar um subdomínio:</p>
-      <ol class="sub-steps">
-        <li>Na seção "Web", em "Add a new web app", escolha a opção de subdomínio</li>
-        <li>Digite <code>{{ nome }}</code> como nome do subdomínio</li>
-        <li>Isso criará a URL <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
-      </ol>
+      <h3>Acesso direto via URL principal (Já Configurado)</h3>
+      <p>Seu projeto já está disponível diretamente pela URL principal:</p>
+      <div class="code-block">
+        <code>{{ request.host_url }}{{ nome }}</code>
+      </div>
+      <p>Não é necessário nenhuma configuração adicional para usar essa URL. O projeto é executado diretamente a partir do dashboard.</p>
       <div class="note">
-        <p><strong>Importante:</strong> O nome do subdomínio deve ser exatamente igual ao nome do projeto para que o redirecionamento automático funcione.</p>
+        <p><strong>Vantagem:</strong> Acesso imediato ao seu projeto sem configuração adicional.</p>
       </div>
     </li>
     
     <li>
-      <h3>Acesso direto via URL principal</h3>
-      <p>Depois de configurar o subdomínio, você poderá acessar seu projeto de duas formas:</p>
+      <h3>Configuração de domínio dedicado (Opcional)</h3>
+      <p>Se preferir ter um domínio dedicado para seu projeto, você pode configurar:</p>
       <ol class="sub-steps">
-        <li>Diretamente pelo subdomínio: <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
-        <li>Através da URL principal: <code>{{ request.host_url }}{{ nome }}</code> (que redirecionará automaticamente)</li>
+        <li>Um subdomínio no PythonAnywhere: <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
+        <li>Um domínio personalizado: <code>www.seuprojeto.com.br</code></li>
       </ol>
+      <div class="note">
+        <p><strong>Nota:</strong> Para isso, você precisará configurar um aplicativo web separado no PythonAnywhere seguindo os passos deste guia.</p>
+      </div>
     </li>
     
     <li>

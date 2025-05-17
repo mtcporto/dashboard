@@ -4,9 +4,9 @@
 <h2>Arquivos de {{ nome }}</h2>
 
 <div class="alert alert-info">
-  <strong>Acesso direto:</strong> Este projeto agora está disponível na URL:
+  <strong>Acesso direto:</strong> Este projeto está disponível na URL abaixo, sem necessidade de configuração adicional:
   <a href="/{{ nome }}" target="_blank" class="btn btn-primary btn-sm">{{ request.host_url }}{{ nome }}</a>
-  <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info btn-sm">Como fazer deploy</a>
+  <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info btn-sm">Opções de deploy</a>
 </div>
 
 {% for categoria, arquivos in estrutura.items() %}
