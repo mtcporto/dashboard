@@ -3,9 +3,10 @@ import sys
 import importlib.util
 from datetime import datetime
 from flask import Flask, Blueprint, render_template, redirect, url_for, request, _request_ctx_stack
+import os # Certifique-se de que os está importado
 
-# Define base directory as parent of dashboard dir
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'meus_projetos'))
+# Define base directory as the parent of the dashboard directory
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 app = Flask(__name__)
 app.config['BASE_DIR'] = BASE_DIR
 
