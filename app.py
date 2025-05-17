@@ -181,6 +181,36 @@ def register_project_blueprints():
                                                           erro="O arquivo app.py não possui uma aplicação Flask válida"), 500
                             except Exception as e:
                                 # Em caso de erro ao carregar o módulo, mostra o erro
+                                error_str = str(e)
+                                
+                                # Verifica se é um erro de SQLite de arquivo de banco de dados
+                                if "sqlite3.OperationalError" in error_str and "unable to open database file" in error_str:
+                                    # Criar o diretório instance para o banco de dados se não existir
+                                    instance_dir = os.path.join(projeto_path, 'instance')
+                                    os.makedirs(instance_dir, exist_ok=True)
+                                    
+                                    # Criar um arquivo de banco de dados vazio
+                                    try:
+                                        import sqlite3
+                                        db_path = os.path.join(instance_dir, 'database.db')
+                                        conn = sqlite3.connect(db_path)
+                                        conn.close()
+                                    except:
+                                        pass  # Se falhar ao criar o DB, continuamos mesmo assim
+                                    
+                                    # Verificar configuração do SQLAlchemy no app.py
+                                    try:
+                                        with open(app_path, 'r') as f:
+                                            app_content = f.read()
+                                            
+                                        # Se a configuração do banco de dados parece estar usando um caminho relativo
+                                        if "sqlite:///" in app_content and "instance_path" not in app_content:
+                                            return render_template('projeto_error.html',
+                                                                 nome=nome_projeto,
+                                                                 erro=f"Erro de banco de dados SQLite: {error_str}. Criamos a pasta 'instance' com um banco de dados vazio. Use um caminho absoluto para o SQLite ou configure instance_path."), 500
+                                    except:
+                                        pass
+                                
                                 return render_template('projeto_error.html', 
                                                       nome=nome_projeto, 
                                                       erro=f"Erro ao executar projeto: {str(e)}"), 500
@@ -278,6 +308,16 @@ def dynamic_project_route(nome_projeto, path):
                             controllers_dir = os.path.join(projeto_path, 'controllers')
                             os.makedirs(controllers_dir, exist_ok=True)
                             
+                            # Criar pasta models se não existir (para projetos que usam SQLAlchemy)
+                            models_dir = os.path.join(projeto_path, 'models')
+                            os.makedirs(models_dir, exist_ok=True)
+                            
+                            # Criar __init__.py na pasta models para evitar erros de importação
+                            models_init = os.path.join(models_dir, '__init__.py')
+                            if not os.path.exists(models_init):
+                                with open(models_init, 'w') as f:
+                                    f.write("# Arquivo __init__.py para o pacote models\n")
+                            
                             # Primeiro verifica se existe um controller.py (nome comum que pode estar sendo usado)
                             existing_controller_path = os.path.join(controllers_dir, 'controller.py')
                             
@@ -353,6 +393,37 @@ def dynamic_project_route(nome_projeto, path):
                                               erro=f"Erro de módulo não encontrado: {str(e)}. Verifique se todos os arquivos necessários foram criados."), 500
                     except Exception as e:
                         # Se houver erro na execução da requisição
+                        error_str = str(e)
+                        
+                        # Verifica se é um erro de SQLite de arquivo de banco de dados
+                        if "sqlite3.OperationalError" in error_str and "unable to open database file" in error_str:
+                            # Criar o diretório instance para o banco de dados se não existir
+                            instance_dir = os.path.join(projeto_path, 'instance')
+                            os.makedirs(instance_dir, exist_ok=True)
+                            
+                            # Criar um arquivo de banco de dados vazio
+                            try:
+                                import sqlite3
+                                db_path = os.path.join(instance_dir, 'database.db')
+                                conn = sqlite3.connect(db_path)
+                                conn.close()
+                            except:
+                                pass  # Se falhar ao criar o DB, continuamos mesmo assim
+                            
+                            # Verificar configuração do SQLAlchemy no app.py
+                            try:
+                                with open(projeto_app_path, 'r') as f:
+                                    app_content = f.read()
+                                    
+                                # Se a configuração do banco de dados parece estar usando um caminho relativo
+                                if "sqlite:///" in app_content and "instance_path" not in app_content:
+                                    return render_template('projeto_error.html',
+                                                         nome=nome_projeto,
+                                                         erro=f"Erro de banco de dados SQLite: {error_str}. Criamos a pasta 'instance' com um banco de dados vazio. Use um caminho absoluto para o SQLite ou configure instance_path."), 500
+                            except:
+                                pass
+                                
+                        # Para outros erros na execução da requisição
                         return render_template('projeto_error.html', 
                                               nome=nome_projeto, 
                                               erro=f"Erro na execução do projeto: {str(e)}"), 500

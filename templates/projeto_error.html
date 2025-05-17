@@ -16,6 +16,15 @@
       <li>Certifique-se de que todas as dependências estão instaladas</li>
       <li>Verifique os erros de sintaxe no código</li>
       <li>Confirme que as rotas estão configuradas corretamente</li>
+      {% if 'sqlite3.OperationalError' in erro %}
+      <li>Para problemas com banco de dados SQLite:
+        <ul>
+          <li>Verifique se o caminho do banco de dados está correto</li>
+          <li>Use caminhos absolutos para o arquivo de banco de dados</li>
+          <li>Certifique-se de que a pasta onde o banco de dados será criado existe</li>
+        </ul>
+      </li>
+      {% endif %}
     </ul>
   </div>
   
@@ -42,6 +51,22 @@
     </ul>
     <p>Clique em "Tentar novamente" para verificar se o problema foi resolvido.</p>
     <p><strong>Dica:</strong> Se o problema persistir, verifique se o seu controller define um Blueprint chamado <code>main_bp</code> ou ajuste o arquivo <code>app.py</code> para usar o blueprint correto.</p>
+  </div>
+  {% elif 'sqlite3.OperationalError' in erro and 'unable to open database file' in erro %}
+  <div class="fix-solution">
+    <h3>Solução rápida - Banco de Dados</h3>
+    <p>Este erro ocorre quando o aplicativo não consegue criar ou acessar o arquivo do banco de dados SQLite.</p>
+    <p>O sistema criou o diretório <code>instance</code> que é o local padrão para arquivos de banco de dados SQLite no Flask.</p>
+    <p>Para corrigir este problema permanentemente, você pode:</p>
+    <ul>
+      <li>Modificar seu código para usar um caminho absoluto para o banco de dados:</li>
+      <pre><code>import os
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'database.db')</code></pre>
+      <li>Ou definir explicitamente o instance_path da sua aplicação:</li>
+      <pre><code>app = Flask(__name__, instance_relative_config=True, instance_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance'))</code></pre>
+    </ul>
+    <p>Clique em "Tentar novamente" para verificar se o problema foi resolvido.</p>
   </div>
   {% endif %}
 </div>
