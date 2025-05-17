@@ -22,9 +22,6 @@ def inject_context():
 from models.database import setup_db
 setup_db(app)
 
-# Adicionando caminhos ao PYTHONPATH
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-
 # Importar e registrar controladores
 import controllers # Isso executa controllers/__init__.py que deve expor main_bp
 
