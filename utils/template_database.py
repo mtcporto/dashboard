@@ -18,8 +18,11 @@ def setup_db(app, database_type='sqlite'):
     
     # Configuração baseada no tipo de banco de dados
     if database_type == 'sqlite':
-        # SQLite - banco de dados local em arquivo
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')
+        # SQLite - banco de dados local em arquivo na pasta instance (padrão do Flask)
+        # Certifica-se de que a pasta instance existe
+        instance_path = os.path.join(basedir, '..', 'instance')
+        os.makedirs(instance_path, exist_ok=True)
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
     elif database_type == 'mysql':
         # MySQL - substitua os valores por seus dados de conexão
         app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://username:password@localhost/db_name'
@@ -28,7 +31,10 @@ def setup_db(app, database_type='sqlite'):
         app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost/db_name'
     else:
         # Padrão para SQLite se tipo não reconhecido
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')
+        # Usa a pasta instance (padrão Flask) para o arquivo de banco de dados
+        instance_path = os.path.join(basedir, '..', 'instance')
+        os.makedirs(instance_path, exist_ok=True)
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(instance_path, 'database.db')
     
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     

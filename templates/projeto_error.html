@@ -30,6 +30,7 @@
   
   <div class="actions">
     <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn btn-primary">Editar projeto no Dashboard</a>
+    <a href="{{ url_for('dashboard.reparar_projeto', nome=nome) }}" class="btn btn-warning">Reparar Projeto</a>
     <a href="/{{ nome }}" class="btn btn-success">Tentar novamente</a>
     <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info">Ver guia de deploy</a>
   </div>
@@ -56,8 +57,19 @@
   <div class="fix-solution">
     <h3>Solução rápida - Banco de Dados</h3>
     <p>Este erro ocorre quando o aplicativo não consegue criar ou acessar o arquivo do banco de dados SQLite.</p>
-    <p>O sistema criou o diretório <code>instance</code> que é o local padrão para arquivos de banco de dados SQLite no Flask.</p>
-    <p>Para corrigir este problema permanentemente, você pode:</p>
+    <p>Clique no botão <strong>"Reparar Projeto"</strong> abaixo para corrigir automaticamente os seguintes problemas:</p>
+    <ul>
+      <li>Criar o diretório <code>instance</code> (local padrão para bancos de dados no Flask)</li>
+      <li>Inicializar um arquivo de banco de dados SQLite vazio</li>
+      <li>Corrigir a configuração do SQLAlchemy para usar o caminho correto</li>
+      <li>Ajustar as permissões necessárias para o banco de dados</li>
+    </ul>
+    
+    <div class="alert alert-info">
+      <strong>Dica:</strong> Após reparar o projeto, clique em "Tentar novamente" para verificar se o problema foi resolvido.
+    </div>
+    
+    <h4>Para corrigir manualmente:</h4>
     <ul>
       <li>Modificar seu código para usar um caminho absoluto para o banco de dados:</li>
       <pre><code>import os
@@ -66,7 +78,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'in
       <li>Ou definir explicitamente o instance_path da sua aplicação:</li>
       <pre><code>app = Flask(__name__, instance_relative_config=True, instance_path=os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance'))</code></pre>
     </ul>
-    <p>Clique em "Tentar novamente" para verificar se o problema foi resolvido.</p>
   </div>
   {% endif %}
 </div>
@@ -84,6 +95,22 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'in
   .error-container h1 {
     color: #dc3545;
     margin-bottom: 1.5rem;
+  }
+  
+  .btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+    font-weight: bold;
+    border: none;
+    padding: 8px 16px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  }
+  
+  .btn-warning:hover {
+    background-color: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
   
   .alert-danger {

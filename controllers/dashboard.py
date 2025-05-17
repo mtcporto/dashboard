@@ -440,7 +440,8 @@ def reparar_projeto(nome):
         'templates',
         'static/css',
         'static/js',
-        'utils'
+        'utils',
+        'instance'  # Adiciona o diretório instance para o banco de dados SQLite
     ]
     
     for diretorio in diretorios:
@@ -519,6 +520,54 @@ def reparar_projeto(nome):
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
+    
+    # Verifica e repara problemas com banco de dados SQLite
+    # 1. Cria um banco de dados vazio na pasta instance
+    instance_dir = os.path.join(projeto_path, 'instance')
+    os.makedirs(instance_dir, exist_ok=True)
+    
+    try:
+        # Criar um arquivo de banco de dados SQLite vazio
+        import sqlite3
+        db_path = os.path.join(instance_dir, 'database.db')
+        conn = sqlite3.connect(db_path)
+        conn.close()
+        
+        # Verifica também se existe um app.db na raiz do projeto
+        app_db_path = os.path.join(projeto_path, 'app.db')
+        if not os.path.exists(app_db_path):
+            conn = sqlite3.connect(app_db_path)
+            conn.close()
+            
+        # Verificar o conteúdo do arquivo models/database.py
+        database_path = os.path.join(projeto_path, 'models', 'database.py')
+        app_path = os.path.join(projeto_path, 'app.py')
+        
+        if os.path.exists(database_path) and os.path.exists(app_path):
+            with open(database_path, 'r') as f:
+                database_content = f.read()
+            
+            with open(app_path, 'r') as f:
+                app_content = f.read()
+            
+            # Se há referências ao SQLite mas não à pasta instance
+            if 'sqlite:///' in database_content and 'instance' not in database_content:
+                # Busca o template atualizado
+                template_path = os.path.join(os.path.dirname(__file__), '../utils/template_database.py')
+                with open(template_path, 'r') as f:
+                    template_content = f.read()
+                
+                # Modifica para usar o caminho correto com instance
+                corrected_content = template_content.replace(
+                    "app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')",
+                    "app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'instance', 'database.db')"
+                )
+                
+                # Salva o arquivo corrigido
+                with open(database_path, 'w') as f:
+                    f.write(corrected_content)
+    except Exception as e:
+        print(f"Erro ao reparar banco de dados: {str(e)}")
     
     # Redirecionar para a página do projeto
     return redirect(url_for('dashboard.projeto', nome=nome))
