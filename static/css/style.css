@@ -57,7 +57,7 @@ h3 {
   transition: transform 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
-  height: 150px;
+  height: 170px;
   position: relative;
 }
 
@@ -112,6 +112,22 @@ h3 {
 
 .btn-danger:hover {
   background-color: #bd2130;
+}
+
+.btn-primary {
+  background-color: #28a745;
+}
+
+.btn-primary:hover {
+  background-color: #218838;
+}
+
+/* Botões de ação do projeto */
+.projeto-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* Arquivo lista */
@@ -209,6 +225,24 @@ textarea.editor {
   padding: 0.6rem 1rem;
   border: 1px solid #dee2e6;
   border-radius: 4px;
+}
+
+/* Alertas e mensagens */
+.alert {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  border-left: 4px solid;
+}
+
+.alert-info {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+  color: #0d47a1;
+}
+
+.alert a {
+  font-weight: bold;
 }
 
 /* Responsividade */

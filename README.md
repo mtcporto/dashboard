@@ -6,10 +6,12 @@ Um painel de gerenciamento de projetos Flask que facilita a criação e administ
 
 Dashboard é uma ferramenta de gerenciamento que permite criar e administrar projetos Flask de forma simples e eficiente. A aplicação oferece uma interface web intuitiva para:
 
-- Criar novos projetos Flask com estrutura MVC pré-configurada
+- Criar novos projetos Flask com estrutura MVC pré-configurada e scaffold completo
 - Visualizar e gerenciar todos os seus projetos em um único lugar
 - Explorar a estrutura de arquivos dos projetos (Modelos, Controladores e Views)
-- Editar arquivos diretamente pela interface web
+- Editar arquivos diretamente pela interface web com tema escuro e destaque de sintaxe
+- Acessar seus projetos diretamente pela URL (ex: /nome-do-projeto)
+- Conectar com diferentes tipos de bancos de dados (SQLite, MySQL, PostgreSQL)
 - Excluir projetos quando necessário
 
 O Dashboard facilita o desenvolvimento de aplicações web Flask, automatizando a criação da estrutura básica e fornecendo um ambiente integrado para gerenciamento de projetos.
@@ -41,11 +43,17 @@ O projeto foi desenvolvido utilizando as seguintes tecnologias:
    ```
    pip install flask
    ```
-3. Execute a aplicação:
+3. Instale todas as dependências:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Execute a aplicação:
    ```
    python app.py
    ```
-4. Acesse a aplicação em seu navegador através do endereço: `http://localhost:5000`
+5. Acesse a aplicação em seu navegador através do endereço:
+   - Dashboard principal: `http://localhost:5000/dashboard`
+   - Projetos: `http://localhost:5000/nome-do-projeto`
 
 ## 📁 Estrutura do Projeto
 
@@ -58,12 +66,36 @@ dashboard/
 │   ├── base.html             # Template base
 │   ├── home.html             # Página inicial
 │   ├── projeto.html          # Visualização de projeto
-│   └── editar_arquivo.html   # Editor de arquivo
+│   ├── projeto_redirect.html # Redirecionamento para projetos
+│   └── editar_arquivo.html   # Editor de arquivo com tema escuro
 ├── static/                   # Arquivos estáticos
 │   └── css/                  # Folhas de estilo
 │       └── style.css         # Estilo principal
 └── utils/                    # Utilitários
     └── filetools.py          # Ferramentas para manipulação de arquivos
+```
+
+## 🏗️ Estrutura dos Novos Projetos
+
+Ao criar um novo projeto, a seguinte estrutura será gerada automaticamente:
+
+```
+projeto/
+├── app.py                    # Aplicação Flask principal
+├── models/                   # Modelos de dados
+│   ├── database.py           # Configuração SQLAlchemy
+│   └── exemplo.py            # Modelo de exemplo
+├── controllers/              # Controladores/Rotas
+│   └── main_controller.py    # Controlador principal
+├── templates/                # Views (templates HTML)
+│   ├── base.html             # Template base
+│   ├── index.html            # Página inicial
+│   └── sobre.html            # Página "Sobre"
+└── static/                   # Arquivos estáticos
+    ├── css/                  # Estilos CSS
+    │   └── style.css         # Folha de estilos principal
+    └── js/                   # JavaScript
+        └── script.js         # Script principal
 ```
 
 ## 🤝 Contribuições

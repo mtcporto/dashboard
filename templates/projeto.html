@@ -3,6 +3,11 @@
 {% block content %}
 <h2>Arquivos de {{ nome }}</h2>
 
+<div class="alert alert-info">
+  <strong>Dica:</strong> Você pode acessar este projeto diretamente pela URL:
+  <a href="/{{ nome }}" target="_blank">{{ request.host_url }}{{ nome }}</a>
+</div>
+
 {% for categoria, arquivos in estrutura.items() %}
   <div class="arquivo-categoria">
     <div class="categoria-header">
