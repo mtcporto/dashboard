@@ -29,7 +29,19 @@
   <div class="fix-solution">
     <h3>Solução rápida</h3>
     <p>Este erro geralmente ocorre quando a estrutura do projeto está incompleta. O sistema tentou reparar automaticamente o projeto.</p>
+    <p>Foram realizadas as seguintes correções:</p>
+    <ul>
+      {% if 'Encontramos um controller.py' in erro %}
+        <li>Detectamos que o projeto usa <code>controller.py</code> em vez de <code>main_controller.py</code></li>
+        <li>Criamos um arquivo <code>main_controller.py</code> compatível</li>
+        <li>Configuramos o módulo para importar corretamente os controladores</li>
+      {% else %}
+        <li>Criamos o arquivo <code>main_controller.py</code> com um controlador padrão</li>
+        <li>Adicionamos arquivo <code>__init__.py</code> na pasta controllers</li>
+      {% endif %}
+    </ul>
     <p>Clique em "Tentar novamente" para verificar se o problema foi resolvido.</p>
+    <p><strong>Dica:</strong> Se o problema persistir, verifique se o seu controller define um Blueprint chamado <code>main_bp</code> ou ajuste o arquivo <code>app.py</code> para usar o blueprint correto.</p>
   </div>
   {% endif %}
 </div>

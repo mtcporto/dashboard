@@ -122,7 +122,33 @@ def register_project_blueprints():
                                             controllers_dir = os.path.join(projeto_path, 'controllers')
                                             os.makedirs(controllers_dir, exist_ok=True)
                                             
-                                            # Verificar se existe o template do controller
+                                            # Primeiro verifica se existe controller.py em vez de main_controller.py
+                                            controller_file_path = os.path.join(controllers_dir, 'controller.py')
+                                            if os.path.exists(controller_file_path):
+                                                # Cria compatibilidade entre controller.py e main_controller.py
+                                                try:
+                                                    with open(controller_file_path, 'r') as f:
+                                                        controller_content = f.read()
+                                                    
+                                                    # Criar main_controller.py
+                                                    main_controller_path = os.path.join(controllers_dir, 'main_controller.py')
+                                                    with open(main_controller_path, 'w') as f:
+                                                        f.write(controller_content)
+                                                    
+                                                    # Criar __init__.py se não existir
+                                                    init_file = os.path.join(controllers_dir, '__init__.py')
+                                                    if not os.path.exists(init_file):
+                                                        with open(init_file, 'w') as f:
+                                                            f.write("# Arquivo de compatibilidade\n")
+                                                            f.write("from controllers.main_controller import *\n")
+                                                    
+                                                    return render_template('projeto_error.html', 
+                                                                nome=nome_projeto, 
+                                                                erro=f"Encontramos um controller.py e criamos main_controller.py para compatibilidade. Por favor, tente novamente."), 500
+                                                except Exception as copy_error:
+                                                    pass  # Se falhar, continua para o código abaixo
+                                            
+                                            # Se não existe controller.py ou falhou ao copiar, usa o template
                                             template_controller_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                                                                                 'utils/template_controller.py')
                                             
@@ -252,27 +278,74 @@ def dynamic_project_route(nome_projeto, path):
                             controllers_dir = os.path.join(projeto_path, 'controllers')
                             os.makedirs(controllers_dir, exist_ok=True)
                             
-                            # Verificar se existe o template do controller
-                            template_controller_path = os.path.join(os.path.dirname(__file__), 
-                                                                'utils/template_controller.py')
+                            # Primeiro verifica se existe um controller.py (nome comum que pode estar sendo usado)
+                            existing_controller_path = os.path.join(controllers_dir, 'controller.py')
                             
-                            if os.path.exists(template_controller_path):
-                                with open(template_controller_path, 'r') as f:
-                                    controller_content = f.read()
+                            if os.path.exists(existing_controller_path):
+                                # Se existe um controller.py, vamos renomeá-lo para main_controller.py
+                                # e ajustá-lo para usar o nome correto
+                                try:
+                                    with open(existing_controller_path, 'r') as f:
+                                        existing_content = f.read()
+                                    
+                                    # Criar novo arquivo com o nome correto
+                                    controller_file = os.path.join(controllers_dir, 'main_controller.py')
+                                    with open(controller_file, 'w') as f:
+                                        f.write(existing_content)
+                                        
+                                    # Manter o original para compatibilidade
+                                    
+                                    # Criar __init__.py na pasta controllers se não existir
+                                    init_file = os.path.join(controllers_dir, '__init__.py')
+                                    if not os.path.exists(init_file):
+                                        # Tenta identificar o nome do blueprint no controller original
+                                        blueprint_name = "main_bp"  # Valor padrão
+                                        try:
+                                            with open(existing_controller_path, 'r') as f:
+                                                content = f.read()
+                                                # Procura por padrões comuns de definição de blueprint
+                                                import re
+                                                bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', content)
+                                                if bp_match:
+                                                    blueprint_name = bp_match.group(1)
+                                        except:
+                                            # Se falhar na detecção, usa o padrão
+                                            pass
+                                            
+                                        with open(init_file, 'w') as f:
+                                            f.write("# Arquivo __init__.py para o pacote controllers\n")
+                                            f.write("# Importação para compatibilidade\n")
+                                            f.write(f"from controllers.main_controller import {blueprint_name}\n")
+                                    
+                                    return render_template('projeto_error.html', 
+                                                      nome=nome_projeto, 
+                                                      erro=f"Encontramos um controller.py e criamos main_controller.py para compatibilidade. Por favor, tente novamente."), 500
+                                except Exception as copy_error:
+                                    return render_template('projeto_error.html', 
+                                                      nome=nome_projeto, 
+                                                      erro=f"Erro ao copiar controller.py para main_controller.py: {str(copy_error)}"), 500
+                            else:
+                                # Verificar se existe o template do controller
+                                template_controller_path = os.path.join(os.path.dirname(__file__), 
+                                                                    'utils/template_controller.py')
                                 
-                                # Criar o arquivo main_controller.py
-                                controller_file = os.path.join(controllers_dir, 'main_controller.py')
-                                with open(controller_file, 'w') as f:
-                                    f.write(controller_content)
-                                
-                                # Criar __init__.py na pasta controllers
-                                init_file = os.path.join(controllers_dir, '__init__.py')
-                                with open(init_file, 'w') as f:
-                                    f.write("# Arquivo __init__.py para o pacote controllers")
-                                
-                                return render_template('projeto_error.html', 
-                                                  nome=nome_projeto, 
-                                                  erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
+                                if os.path.exists(template_controller_path):
+                                    with open(template_controller_path, 'r') as f:
+                                        controller_content = f.read()
+                                    
+                                    # Criar o arquivo main_controller.py
+                                    controller_file = os.path.join(controllers_dir, 'main_controller.py')
+                                    with open(controller_file, 'w') as f:
+                                        f.write(controller_content)
+                                    
+                                    # Criar __init__.py na pasta controllers
+                                    init_file = os.path.join(controllers_dir, '__init__.py')
+                                    with open(init_file, 'w') as f:
+                                        f.write("# Arquivo __init__.py para o pacote controllers")
+                                    
+                                    return render_template('projeto_error.html', 
+                                                      nome=nome_projeto, 
+                                                      erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
                         
                         # Para outros erros de módulos não encontrados
                         return render_template('projeto_error.html', 
