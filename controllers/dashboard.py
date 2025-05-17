@@ -91,18 +91,10 @@ def criar_projeto():
             except Exception:
                 pass  # Manter o default se a busca falhar
 
-            # Conteúdo robusto para controllers/__init__.py
+            # Conteúdo simplificado para controllers/__init__.py
+            # Relies on app.py (from template_app.py) to set up sys.path correctly.
             controllers_init_py_content = f"""# Arquivo __init__.py para o pacote controllers
-# Configuração automática para garantir importações corretas
-import os
-import sys
-
-# Garantir que o diretório pai (raiz do projeto) está no PYTHONPATH
-_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
-
-# Exportar {blueprint_name} diretamente
+# Configurado para importar {blueprint_name} automaticamente
 from .main_controller import {blueprint_name}
 """
             
