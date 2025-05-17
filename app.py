@@ -184,7 +184,8 @@ def register_project_blueprints():
                                                     pass  # Se falhar, continua para o código abaixo
                                             
                                             # Se não existe controller.py ou falhou ao copiar, usa o template
-                                            template_controller_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                            # CORRIGIDO: Caminho para o template_controller.py
+                                            template_controller_path = os.path.join(os.path.dirname(__file__), 
                                                                                 'utils/template_controller.py')
                                             
                                             if os.path.exists(template_controller_path):
@@ -196,14 +197,34 @@ def register_project_blueprints():
                                                 with open(controller_file, 'w') as f:
                                                     f.write(controller_content)
                                                 
-                                                # Criar __init__.py na pasta controllers
+                                                # Criar __init__.py na pasta controllers com lógica robusta
                                                 init_file = os.path.join(controllers_dir, '__init__.py')
+                                                
+                                                blueprint_name = "main_bp" # Default
+                                                # Tenta detectar o nome do blueprint do main_controller.py (template ou copiado)
+                                                try:
+                                                    import re
+                                                    bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', controller_content)
+                                                    if bp_match:
+                                                        blueprint_name = bp_match.group(1)
+                                                except Exception:
+                                                    pass # Mantém o padrão se a detecção falhar
+
                                                 with open(init_file, 'w') as f:
-                                                    f.write("# Arquivo __init__.py para o pacote controllers")
+                                                    f.write("# Arquivo __init__.py para o pacote controllers\n")
+                                                    f.write("# Configuração automática para garantir importações corretas\n")
+                                                    f.write("import os\n")
+                                                    f.write("import sys\n\n")
+                                                    f.write("# Garantir que o diretório pai (raiz do projeto) está no PYTHONPATH\n")
+                                                    f.write("_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))\n")
+                                                    f.write("if _project_root not in sys.path:\n")
+                                                    f.write("    sys.path.insert(0, _project_root)\n\n")
+                                                    f.write(f"# Exportar {blueprint_name} diretamente\n")
+                                                    f.write(f"from .main_controller import {blueprint_name}\n")
                                                 
                                                 return render_template('projeto_error.html', 
-                                                                  nome=nome_projeto, 
-                                                                  erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
+                                                                nome=nome_projeto, 
+                                                                erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
                                         
                                         # Para outros erros de módulos não encontrados
                                         return render_template('projeto_error.html', 
@@ -216,17 +237,17 @@ def register_project_blueprints():
                                                           erro="O arquivo app.py não possui uma aplicação Flask válida"), 500
                             except Exception as e:
                                 # Em caso de erro ao carregar o módulo, mostra o erro
-                                error_str = str(e)
+                                error_str = str(e) # Definir error_str
                                 
                                 # Verifica se é um erro de SQLite de arquivo de banco de dados
                                 if "sqlite3.OperationalError" in error_str and "unable to open database file" in error_str:
                                     # Criar o diretório instance para o banco de dados se não existir
-                                    instance_dir = os.path.join(projeto_path, 'instance')
+                                    instance_dir = os.path.join(projeto_path, 'instance') # Definir instance_dir
                                     os.makedirs(instance_dir, exist_ok=True)
                                     
                                     # Criar um arquivo de banco de dados vazio
                                     try:
-                                        import sqlite3
+                                        import sqlite3 # Importar sqlite3
                                         db_path = os.path.join(instance_dir, 'database.db')
                                         conn = sqlite3.connect(db_path)
                                         conn.close()
