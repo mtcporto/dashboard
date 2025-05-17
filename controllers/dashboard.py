@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, current_app, request, redirect, url_for
 import os
+import sys # Added import
+import re # Added import
 from utils.filetools import listar_projetos
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -78,8 +80,35 @@ def criar_projeto():
                 template_controller = f.read()
                 
             # Criar arquivos __init__.py para evitar erros de importação
-            init_py_content = "# Arquivo __init__.py para configurar o pacote"
+            # init_py_content = "# Arquivo __init__.py para configurar o pacote" # Old content
             
+            # Determinar o nome do blueprint a partir do template_controller.py
+            blueprint_name = "main_bp" # Default
+            try:
+                bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', template_controller)
+                if bp_match:
+                    blueprint_name = bp_match.group(1)
+            except Exception:
+                pass  # Manter o default se a busca falhar
+
+            # Conteúdo robusto para controllers/__init__.py
+            controllers_init_py_content = f"""# Arquivo __init__.py para o pacote controllers
+# Configuração automática para garantir importações corretas
+import os
+import sys
+
+# Garantir que o diretório pai (raiz do projeto) está no PYTHONPATH
+_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
+# Exportar {blueprint_name} diretamente
+from .main_controller import {blueprint_name}
+"""
+            
+            # Conteúdo genérico para outros __init__.py
+            generic_init_py_content = "# Arquivo __init__.py para configurar o pacote"
+
             # Arquivos do projeto aprimorado com MVC e conexão de banco de dados
             arquivos = {
                 # App principal com roteamento para acesso via URL direta (/nome_do_projeto)
@@ -375,7 +404,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
                 os.makedirs(os.path.dirname(init_file_path), exist_ok=True)
                 with open(init_file_path, 'w', encoding='utf-8') as f:
-                    f.write(init_py_content)
+                    if init_dir == 'controllers':
+                        f.write(controllers_init_py_content)
+                    else:
+                        f.write(generic_init_py_content)
             
             # Criar os arquivos do projeto
             for caminho, conteudo in arquivos.items():
@@ -404,7 +436,7 @@ def editar_arquivo(nome, path):
 
 @dashboard_bp.route('/deletar_projeto/<nome>', methods=['POST'])
 def deletar_projeto(nome):
-    import shutil
+    import shutil # Added import
     
     base = CAMINHO_PROJETOS()
     projeto_path = os.path.join(base, nome)
