@@ -6,6 +6,16 @@
   <div class="editor-path">
     <strong>Projeto:</strong> {{ nome }} / <strong>Arquivo:</strong> {{ path }}
   </div>
+  <div style="margin-bottom: 10px;">
+    <select id="theme-selector" class="theme-selector">
+      <option value="github_dark">GitHub Dark</option>
+      <option value="twilight">Twilight</option>
+      <option value="tomorrow_night">Tomorrow Night</option>
+      <option value="monokai">Monokai</option>
+      <option value="dracula">Dracula</option>
+      <option value="solarized_dark">Solarized Dark</option>
+    </select>
+  </div>
   <form method="post" id="editor-form">
     <div id="editor" style="height: 500px; width: 100%; border-radius: 4px;">{{ conteudo }}</div>
     <textarea name="conteudo" id="editor-content" style="display: none;">{{ conteudo }}</textarea>
@@ -18,7 +28,22 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ace.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/ext-language_tools.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-github_dark.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-twilight.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-tomorrow_night.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-monokai.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-dracula.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace-builds/1.16.0/theme-solarized_dark.js"></script>
 <style>
+  .theme-selector {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    background-color: #343a40;
+    color: #fff;
+    cursor: pointer;
+  }
+  
   .ace_editor {
     background-color: #282C34 !important;
   }
@@ -65,7 +90,11 @@
   document.addEventListener('DOMContentLoaded', function() {
     ace.require("ace/ext/language_tools");
     const editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
+    
+    // Configurar tema padrão (GitHub Dark)
+    const lastTheme = localStorage.getItem('ace_editor_theme') || 'github_dark';
+    document.getElementById('theme-selector').value = lastTheme;
+    editor.setTheme("ace/theme/" + lastTheme);
     
     // Tentar determinar o modo baseado na extensão do arquivo
     const path = "{{ path }}";
@@ -160,6 +189,14 @@
     
     saveBtn.addEventListener('mouseout', function() {
       this.textContent = "Salvar Alterações (Ctrl+S)";
+    });
+    
+    // Adicionar lógica de seleção de tema
+    const themeSelector = document.getElementById('theme-selector');
+    themeSelector.addEventListener('change', function() {
+      const selectedTheme = this.value;
+      editor.setTheme("ace/theme/" + selectedTheme);
+      localStorage.setItem('ace_editor_theme', selectedTheme);
     });
   });
 </script>
