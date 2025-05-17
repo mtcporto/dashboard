@@ -95,9 +95,59 @@ def register_project_blueprints():
                                 
                                 # Obtém a aplicação Flask do módulo
                                 if hasattr(project_module, 'app'):
-                                    # Executa a requisição no contexto do projeto
-                                    response = project_module.app.full_dispatch_request()
-                                    return response
+                                    try:
+                                        # Salvar configuração original do app
+                                        original_config = {}
+                                        if hasattr(project_module.app, 'config'):
+                                            for key in project_module.app.config:
+                                                original_config[key] = project_module.app.config[key]
+                                        
+                                        # Configurar o app do projeto para o ambiente atual
+                                        project_module.app.config['APPLICATION_ROOT'] = f'/{nome_projeto}'
+                                        project_module.app.config['DEBUG'] = False
+                                        
+                                        # Executa a requisição no contexto do projeto
+                                        response = project_module.app.full_dispatch_request()
+                                        
+                                        # Restaurar a configuração original
+                                        if hasattr(project_module.app, 'config'):
+                                            for key, value in original_config.items():
+                                                project_module.app.config[key] = value
+                                        
+                                        return response
+                                    except ModuleNotFoundError as e:
+                                        # Se o erro for de módulo não encontrado, mostramos informações de como corrigir
+                                        if "controllers.main_controller" in str(e):
+                                            # Criar pasta controllers se não existir
+                                            controllers_dir = os.path.join(projeto_path, 'controllers')
+                                            os.makedirs(controllers_dir, exist_ok=True)
+                                            
+                                            # Verificar se existe o template do controller
+                                            template_controller_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                                                                'utils/template_controller.py')
+                                            
+                                            if os.path.exists(template_controller_path):
+                                                with open(template_controller_path, 'r') as f:
+                                                    controller_content = f.read()
+                                                
+                                                # Criar o arquivo main_controller.py
+                                                controller_file = os.path.join(controllers_dir, 'main_controller.py')
+                                                with open(controller_file, 'w') as f:
+                                                    f.write(controller_content)
+                                                
+                                                # Criar __init__.py na pasta controllers
+                                                init_file = os.path.join(controllers_dir, '__init__.py')
+                                                with open(init_file, 'w') as f:
+                                                    f.write("# Arquivo __init__.py para o pacote controllers")
+                                                
+                                                return render_template('projeto_error.html', 
+                                                                  nome=nome_projeto, 
+                                                                  erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
+                                        
+                                        # Para outros erros de módulos não encontrados
+                                        return render_template('projeto_error.html', 
+                                                          nome=nome_projeto, 
+                                                          erro=f"Erro de módulo não encontrado: {str(e)}. Verifique se todos os arquivos necessários foram criados."), 500
                                 else:
                                     # Se não encontrar a aplicação Flask, exibe um erro
                                     return render_template('projeto_error.html', 
@@ -175,10 +225,59 @@ def dynamic_project_route(nome_projeto, path):
                         # Função start_response para WSGI
                         def start_response(status, headers, exc_info=None):
                             return None
-                            
+                        
+                        # Salvar configuração original do app
+                        original_config = {}
+                        if hasattr(project_module.app, 'config'):
+                            for key in project_module.app.config:
+                                original_config[key] = project_module.app.config[key]
+                                
+                        # Configurar o app do projeto para o ambiente atual
+                        project_module.app.config['APPLICATION_ROOT'] = f'/{nome_projeto}'
+                        project_module.app.config['DEBUG'] = False
+                        
                         # Redirecionar a solicitação para o app do projeto
                         response = project_module.app.full_dispatch_request()
+                        
+                        # Restaurar a configuração original
+                        if hasattr(project_module.app, 'config'):
+                            for key, value in original_config.items():
+                                project_module.app.config[key] = value
+                                
                         return response
+                    except ModuleNotFoundError as e:
+                        # Se o erro for de módulo não encontrado, mostramos informações de como corrigir
+                        if "controllers.main_controller" in str(e):
+                            # Criar pasta controllers se não existir
+                            controllers_dir = os.path.join(projeto_path, 'controllers')
+                            os.makedirs(controllers_dir, exist_ok=True)
+                            
+                            # Verificar se existe o template do controller
+                            template_controller_path = os.path.join(os.path.dirname(__file__), 
+                                                                'utils/template_controller.py')
+                            
+                            if os.path.exists(template_controller_path):
+                                with open(template_controller_path, 'r') as f:
+                                    controller_content = f.read()
+                                
+                                # Criar o arquivo main_controller.py
+                                controller_file = os.path.join(controllers_dir, 'main_controller.py')
+                                with open(controller_file, 'w') as f:
+                                    f.write(controller_content)
+                                
+                                # Criar __init__.py na pasta controllers
+                                init_file = os.path.join(controllers_dir, '__init__.py')
+                                with open(init_file, 'w') as f:
+                                    f.write("# Arquivo __init__.py para o pacote controllers")
+                                
+                                return render_template('projeto_error.html', 
+                                                  nome=nome_projeto, 
+                                                  erro=f"Corrigimos automaticamente o erro '{str(e)}'. Por favor, tente novamente."), 500
+                        
+                        # Para outros erros de módulos não encontrados
+                        return render_template('projeto_error.html', 
+                                              nome=nome_projeto, 
+                                              erro=f"Erro de módulo não encontrado: {str(e)}. Verifique se todos os arquivos necessários foram criados."), 500
                     except Exception as e:
                         # Se houver erro na execução da requisição
                         return render_template('projeto_error.html', 

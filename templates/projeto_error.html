@@ -21,8 +21,17 @@
   
   <div class="actions">
     <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn btn-primary">Editar projeto no Dashboard</a>
+    <a href="/{{ nome }}" class="btn btn-success">Tentar novamente</a>
     <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info">Ver guia de deploy</a>
   </div>
+  
+  {% if 'ModuleNotFoundError' in erro or 'controllers.main_controller' in erro %}
+  <div class="fix-solution">
+    <h3>Solução rápida</h3>
+    <p>Este erro geralmente ocorre quando a estrutura do projeto está incompleta. O sistema tentou reparar automaticamente o projeto.</p>
+    <p>Clique em "Tentar novamente" para verificar se o problema foi resolvido.</p>
+  </div>
+  {% endif %}
 </div>
 
 <style>
@@ -76,6 +85,13 @@
     border-radius: 4px;
     text-decoration: none;
     font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+    text-decoration: none;
   }
   
   .btn-primary {
@@ -86,6 +102,25 @@
   .btn-info {
     background-color: #17a2b8;
     color: white;
+  }
+  
+  .btn-success {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .fix-solution {
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    border-radius: 4px;
+    color: #155724;
+  }
+  
+  .fix-solution h3 {
+    color: #155724;
+    margin-bottom: 0.5rem;
   }
 </style>
 {% endblock %}

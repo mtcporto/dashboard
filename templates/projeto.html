@@ -7,6 +7,7 @@
   <strong>Acesso direto:</strong> Este projeto está disponível na URL abaixo, sem necessidade de configuração adicional:
   <a href="/{{ nome }}" target="_blank" class="btn btn-primary btn-sm">{{ request.host_url }}{{ nome }}</a>
   <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info btn-sm">Opções de deploy</a>
+  <a href="{{ url_for('dashboard.reparar_projeto', nome=nome) }}" class="btn btn-warning btn-sm">Reparar projeto</a>
 </div>
 
 {% for categoria, arquivos in estrutura.items() %}
@@ -55,6 +56,11 @@
   .btn-info {
     background-color: #17a2b8;
     color: white;
+  }
+  
+  .btn-warning {
+    background-color: #ffc107;
+    color: #212529;
   }
   
   .btn-sm:hover {

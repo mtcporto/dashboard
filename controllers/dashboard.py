@@ -76,6 +76,9 @@ def criar_projeto():
                 
             with open(os.path.join(os.path.dirname(__file__), '../utils/template_controller.py'), 'r') as f:
                 template_controller = f.read()
+                
+            # Criar arquivos __init__.py para evitar erros de importação
+            init_py_content = "# Arquivo __init__.py para configurar o pacote"
             
             # Arquivos do projeto aprimorado com MVC e conexão de banco de dados
             arquivos = {
@@ -361,6 +364,20 @@ document.addEventListener('DOMContentLoaded', function() {
 """
             }
             
+            # Adicionar arquivos __init__.py para cada pacote Python
+            init_dirs = [
+                'controllers',
+                'models',
+                'utils'
+            ]
+            
+            for init_dir in init_dirs:
+                init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
+                os.makedirs(os.path.dirname(init_file_path), exist_ok=True)
+                with open(init_file_path, 'w', encoding='utf-8') as f:
+                    f.write(init_py_content)
+            
+            # Criar os arquivos do projeto
             for caminho, conteudo in arquivos.items():
                 arquivo_full_path = os.path.join(projeto_path, caminho)
                 os.makedirs(os.path.dirname(arquivo_full_path), exist_ok=True)
@@ -405,3 +422,103 @@ def deletar_projeto(nome):
 def deploy_guide(nome):
     """Exibe um guia de como implantar o projeto no PythonAnywhere"""
     return render_template('deploy_guide.html', nome=nome)
+
+@dashboard_bp.route('/projeto/<nome>/reparar', methods=['GET', 'POST'])
+def reparar_projeto(nome):
+    """Repara um projeto existente adicionando os arquivos que faltam"""
+    base = CAMINHO_PROJETOS()
+    projeto_path = os.path.join(base, nome)
+    
+    if not os.path.exists(projeto_path) or not os.path.isdir(projeto_path):
+        return render_template('projeto_error.html', nome=nome, 
+                              erro="Projeto não encontrado. Não foi possível reparar."), 404
+    
+    # Verificar e criar diretórios essenciais
+    diretorios = [
+        'controllers',
+        'models',
+        'templates',
+        'static/css',
+        'static/js',
+        'utils'
+    ]
+    
+    for diretorio in diretorios:
+        dir_path = os.path.join(projeto_path, diretorio)
+        os.makedirs(dir_path, exist_ok=True)
+    
+    # Adicionar os arquivos __init__.py
+    init_py_content = "# Arquivo __init__.py para configurar o pacote"
+    init_dirs = ['controllers', 'models', 'utils']
+    
+    for init_dir in init_dirs:
+        init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
+        if not os.path.exists(init_file_path):
+            with open(init_file_path, 'w', encoding='utf-8') as f:
+                f.write(init_py_content)
+    
+    # Verificar e criar os arquivos de template
+    arquivos_template = {
+        'app.py': '../utils/template_app.py',
+        'controllers/main_controller.py': '../utils/template_controller.py',
+        'models/database.py': '../utils/template_database.py',
+        'models/exemplo.py': '../utils/template_exemplo.py'
+    }
+    
+    for destino, origem in arquivos_template.items():
+        destino_path = os.path.join(projeto_path, destino)
+        origem_path = os.path.join(os.path.dirname(__file__), origem)
+        
+        # Se o arquivo não existir, copie do template
+        if not os.path.exists(destino_path):
+            with open(origem_path, 'r', encoding='utf-8') as f_origem:
+                template_content = f_origem.read()
+                
+            # Certifique-se de que o diretório de destino existe
+            os.makedirs(os.path.dirname(destino_path), exist_ok=True)
+            
+            with open(destino_path, 'w', encoding='utf-8') as f_destino:
+                f_destino.write(template_content)
+    
+    # Verificar se há templates HTML básicos
+    html_templates = {
+        'templates/base.html': """<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Projeto Flask{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+""",
+        'templates/index.html': """{% extends "base.html" %}
+
+{% block title %}Início{% endblock %}
+
+{% block content %}
+<h1>Bem-vindo ao Projeto Flask</h1>
+<p>Este projeto foi reparado automaticamente pelo Dashboard.</p>
+{% endblock %}
+"""
+    }
+    
+    for html_path, html_content in html_templates.items():
+        file_path = os.path.join(projeto_path, html_path)
+        if not os.path.exists(file_path):
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+    
+    # Redirecionar para a página do projeto
+    return redirect(url_for('dashboard.projeto', nome=nome))
