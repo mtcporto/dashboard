@@ -26,16 +26,14 @@ setup_db(app)
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 # Importar e registrar controladores
-try:
-    from controllers.main_controller import main_bp
-except ImportError:
-    # Fallback para compatibilidade
-    import controllers
-    main_bp = controllers.main_controller.main_bp
+import controllers # Isso executa controllers/__init__.py que deve expor main_bp
 
 # Registrar o blueprint com prefixo vazio para funcionar como aplicação principal
 # Isso permitirá acesso através de https://devosflask.pythonanywhere.com/nome_do_projeto
-app.register_blueprint(main_bp)
+# controllers/__init__.py é responsável por importar e expor o blueprint correto (e.g., main_bp)
+# O nome 'main_bp' é usado aqui porque é o nome padrão no template_controller.py e
+# o que controllers/__init__.py irá exportar por padrão.
+app.register_blueprint(controllers.main_bp)
 
 # Registramos uma página para detectar o projeto no sistema de dashboard
 @app.route('/dashboard_detect')
