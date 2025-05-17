@@ -64,149 +64,32 @@ def criar_projeto():
             for pasta in estrutura:
                 os.makedirs(os.path.join(projeto_path, pasta), exist_ok=True)
             
+            # Carregar os templates de arquivos Python
+            with open(os.path.join(os.path.dirname(__file__), '../utils/template_app.py'), 'r') as f:
+                template_app = f.read()
+                
+            with open(os.path.join(os.path.dirname(__file__), '../utils/template_database.py'), 'r') as f:
+                template_database = f.read()
+                
+            with open(os.path.join(os.path.dirname(__file__), '../utils/template_exemplo.py'), 'r') as f:
+                template_exemplo = f.read()
+                
+            with open(os.path.join(os.path.dirname(__file__), '../utils/template_controller.py'), 'r') as f:
+                template_controller = f.read()
+            
             # Arquivos do projeto aprimorado com MVC e conexão de banco de dados
             arquivos = {
                 # App principal com roteamento para acesso via URL direta (/nome_do_projeto)
-                'app.py': """from flask import Flask, render_template, Blueprint
-import os
-
-app = Flask(__name__)
-
-# Configuração do banco de dados
-from models.database import setup_db
-setup_db(app)
-
-# Importar e registrar controladores
-from controllers.main_controller import main_bp
-
-# Se registrado como Blueprint, você pode acessar pela URL principal do site
-# Ex: https://devosflask.pythonanywhere.com/nome_do_projeto
-app.register_blueprint(main_bp)
-
-# Se preferir acessar diretamente na raiz, descomente esta linha:
-# app.register_blueprint(main_bp, url_prefix='/')
-
-if __name__ == '__main__':
-    app.run(debug=True)
-""",
+                'app.py': template_app,
+                
                 # Modelo de banco de dados SQLAlchemy
-                'models/database.py': """from flask_sqlalchemy import SQLAlchemy
-import os
-
-db = SQLAlchemy()
-
-def setup_db(app, database_type='sqlite'):
-    """
-    Configura a conexão com o banco de dados
-    
-    Tipos suportados:
-    - sqlite (padrão): SQLite local
-    - mysql: MySQL
-    - postgresql: PostgreSQL
-    """
-    
-    # Diretório do projeto
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    
-    # Configuração baseada no tipo de banco de dados
-    if database_type == 'sqlite':
-        # SQLite - banco de dados local em arquivo
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')
-    elif database_type == 'mysql':
-        # MySQL - substitua os valores por seus dados de conexão
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://username:password@localhost/db_name'
-    elif database_type == 'postgresql':
-        # PostgreSQL - substitua os valores por seus dados de conexão
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://username:password@localhost/db_name'
-    else:
-        # Padrão para SQLite se tipo não reconhecido
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')
-    
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
-    # Inicializar banco de dados
-    db.init_app(app)
-    
-    # Criar todas as tabelas se não existirem
-    with app.app_context():
-        db.create_all()
-    
-    return db
-""",
+                'models/database.py': template_database,
+                
                 # Modelo de exemplo
-                'models/exemplo.py': """from models.database import db
-from datetime import datetime
-
-class Exemplo(db.Model):
-    __tablename__ = 'exemplos'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    titulo = db.Column(db.String(255), nullable=False)
-    descricao = db.Column(db.Text)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __init__(self, titulo, descricao):
-        self.titulo = titulo
-        self.descricao = descricao
-    
-    def format(self):
-        return {
-            'id': self.id,
-            'titulo': self.titulo,
-            'descricao': self.descricao,
-            'data_criacao': self.data_criacao.strftime('%Y-%m-%d %H:%M:%S')
-        }
-""",
+                'models/exemplo.py': template_exemplo,
+                
                 # Controlador principal
-                'controllers/main_controller.py': """from flask import Blueprint, render_template, request, redirect, url_for, jsonify
-from models.database import db
-from models.exemplo import Exemplo
-
-# Blueprint que poderá ser acessado diretamente na URL
-main_bp = Blueprint('main', __name__, url_prefix='')
-
-@main_bp.route('/')
-def index():
-    """Página inicial do projeto"""
-    return render_template('index.html')
-
-@main_bp.route('/sobre')
-def sobre():
-    """Página de informações sobre o projeto"""
-    return render_template('sobre.html')
-
-@main_bp.route('/api/exemplos', methods=['GET'])
-def listar_exemplos():
-    """API para listar exemplos"""
-    exemplos = Exemplo.query.all()
-    return jsonify({
-        'success': True,
-        'exemplos': [exemplo.format() for exemplo in exemplos]
-    })
-
-@main_bp.route('/api/exemplos', methods=['POST'])
-def criar_exemplo():
-    """API para criar um novo exemplo"""
-    try:
-        data = request.get_json()
-        titulo = data.get('titulo')
-        descricao = data.get('descricao', '')
-        
-        novo_exemplo = Exemplo(titulo=titulo, descricao=descricao)
-        db.session.add(novo_exemplo)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'exemplo': novo_exemplo.format()
-        }), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-""",
+                'controllers/main_controller.py': template_controller,
                 # Template base
                 'templates/base.html': """<!DOCTYPE html>
 <html lang="pt-BR">
