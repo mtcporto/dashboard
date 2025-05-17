@@ -4,8 +4,9 @@
 <h2>Arquivos de {{ nome }}</h2>
 
 <div class="alert alert-info">
-  <strong>Dica:</strong> Você pode acessar este projeto diretamente pela URL:
-  <a href="/{{ nome }}" target="_blank">{{ request.host_url }}{{ nome }}</a>
+  <strong>Acesso direto:</strong> Este projeto agora está disponível na URL:
+  <a href="/{{ nome }}" target="_blank" class="btn btn-primary btn-sm">{{ request.host_url }}{{ nome }}</a>
+  <a href="{{ url_for('dashboard.deploy_guide', nome=nome) }}" class="btn btn-info btn-sm">Como fazer deploy</a>
 </div>
 
 {% for categoria, arquivos in estrutura.items() %}
@@ -28,4 +29,38 @@
 {% endfor %}
 
 <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">← Voltar</a>
+
+<style>
+  .alert-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 0.875rem;
+    margin-left: 10px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s;
+  }
+  
+  .btn-primary {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .btn-info {
+    background-color: #17a2b8;
+    color: white;
+  }
+  
+  .btn-sm:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
+</style>
 {% endblock %}

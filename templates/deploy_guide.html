@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="project-deploy-guide">
+  <h1>Como implantar o projeto "{{ nome }}" no PythonAnywhere</h1>
+  
+  <div class="alert alert-info">
+    <p>Para implantar este projeto como um site separado no PythonAnywhere, siga os passos abaixo.</p>
+  </div>
+  
+  <ol class="steps">
+    <li>
+      <h3>Faça login no painel do PythonAnywhere</h3>
+      <p>Acesse <a href="https://www.pythonanywhere.com" target="_blank">www.pythonanywhere.com</a> e faça login na sua conta.</p>
+    </li>
+    
+    <li>
+      <h3>Crie um novo aplicativo web</h3>
+      <p>No painel principal, clique em "Web" e depois em "Add a new web app".</p>
+      <div class="code-block">
+        <p>Selecione "Flask" como framework</p>
+        <p>Escolha a versão do Python (3.10 recomendado)</p>
+      </div>
+    </li>
+    
+    <li>
+      <h3>Configure o caminho do código-fonte</h3>
+      <p>No campo "Source code", informe o caminho absoluto para o seu projeto:</p>
+      <div class="code-block">
+        <code>/home/{{ request.host.split('.')[0] }}/{{ nome }}</code>
+      </div>
+    </li>
+    
+    <li>
+      <h3>Configure o arquivo WSGI</h3>
+      <p>Clique em "WSGI configuration file" para editá-lo e substitua o conteúdo pelo exemplo abaixo:</p>
+      <div class="code-block">
+<pre>import sys
+import os
+
+# Adicione o caminho do projeto ao caminho de importação Python
+path = '/home/{{ request.host.split('.')[0] }}/{{ nome }}'
+if path not in sys.path:
+    sys.path.insert(0, path)
+
+# Importe sua aplicação Flask
+from app import app as application</pre>
+      </div>
+    </li>
+    
+    <li>
+      <h3>Configure um subdomínio</h3>
+      <p>Para acessar seu projeto diretamente pela URL <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code>, você deve configurar um subdomínio:</p>
+      <ol class="sub-steps">
+        <li>Na seção "Web", em "Add a new web app", escolha a opção de subdomínio</li>
+        <li>Digite <code>{{ nome }}</code> como nome do subdomínio</li>
+        <li>Isso criará a URL <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
+      </ol>
+      <div class="note">
+        <p><strong>Importante:</strong> O nome do subdomínio deve ser exatamente igual ao nome do projeto para que o redirecionamento automático funcione.</p>
+      </div>
+    </li>
+    
+    <li>
+      <h3>Acesso direto via URL principal</h3>
+      <p>Depois de configurar o subdomínio, você poderá acessar seu projeto de duas formas:</p>
+      <ol class="sub-steps">
+        <li>Diretamente pelo subdomínio: <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
+        <li>Através da URL principal: <code>{{ request.host_url }}{{ nome }}</code> (que redirecionará automaticamente)</li>
+      </ol>
+    </li>
+    
+    <li>
+      <h3>Reinicie o aplicativo</h3>
+      <p>Clique no botão "Reload" para reiniciar seu aplicativo com as novas configurações.</p>
+    </li>
+  </ol>
+  
+  <div class="actions">
+    <a href="{{ url_for('dashboard.projeto', nome=nome) }}" class="btn">← Voltar para o gerenciamento do projeto</a>
+  </div>
+</div>
+
+<style>
+  .project-deploy-guide {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .steps {
+    margin: 2rem 0;
+    padding-left: 0;
+    counter-reset: step-counter;
+    list-style-type: none;
+  }
+  
+  .steps li {
+    position: relative;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    counter-increment: step-counter;
+  }
+  
+  .steps li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: -15px;
+    top: -15px;
+    width: 30px;
+    height: 30px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+  
+  .steps h3 {
+    margin-top: 0;
+    color: #343a40;
+  }
+  
+  .code-block {
+    background-color: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    padding: 1rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+  
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  
+  code {
+    font-family: Consolas, Monaco, 'Andale Mono', monospace;
+    color: #d63384;
+  }
+  
+  .actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .sub-steps {
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+    list-style-type: lower-alpha;
+  }
+  
+  .sub-steps li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .note {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: #856404;
+  }
+</style>
+{% endblock %}

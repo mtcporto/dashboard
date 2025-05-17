@@ -400,3 +400,8 @@ def deletar_projeto(nome):
             pass
             
     return redirect(url_for('dashboard.index'))
+
+@dashboard_bp.route('/projeto/<nome>/deploy')
+def deploy_guide(nome):
+    """Exibe um guia de como implantar o projeto no PythonAnywhere"""
+    return render_template('deploy_guide.html', nome=nome)

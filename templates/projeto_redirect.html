@@ -12,13 +12,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             flex-direction: column;
             text-align: center;
+            padding: 20px;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             padding: 2rem;
             background-color: white;
             border-radius: 8px;
@@ -53,23 +54,67 @@
         }
         .btn:hover {
             background-color: #0056b3;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+        }
+        .small-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 20px;
+        }
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .deployment-info {
+            margin-top: 30px;
+            text-align: left;
+            background-color: #e9f5ff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .steps {
+            margin-left: 20px;
+            padding-left: 0;
+        }
+        .steps li {
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Projeto {{ nome }}</h1>
-        <p>Este projeto está sendo executado em um servidor Flask separado.</p>
+        <p>Este projeto está disponível em um subdomínio dedicado.</p>
         <div class="spinner"></div>
         <p>Redirecionando para a aplicação...</p>
-        <a href="/{{ nome }}" class="btn">Ir para a aplicação</a>
+        <a href="{{ subdomain_url }}" class="btn">Ir para a aplicação</a>
+        <p class="small-text">Caminho do projeto: <code>{{ projeto_path }}</code></p>
+        
+        <div class="deployment-info">
+            <p><strong>Ainda não configurou o subdomínio?</strong></p>
+            <p>Para acessar este projeto, você precisa configurá-lo no PythonAnywhere:</p>
+            <ol class="steps">
+                <li>Acesse seu painel do PythonAnywhere</li>
+                <li>Crie um novo aplicativo web com o nome <strong>{{ nome }}</strong></li>
+                <li>Configure o caminho <code>{{ projeto_path }}</code></li>
+                <li>Configure o domínio como <code>{{ nome }}.{{ request.host.split('.')[0] }}.pythonanywhere.com</code></li>
+            </ol>
+            <a href="/dashboard/projeto/{{ nome }}/deploy" class="btn btn-info">Ver guia detalhado</a>
+        </div>
     </div>
 
     <script>
-        // Tenta redirecionar automaticamente após 2 segundos
+        // Tenta redirecionar automaticamente após 5 segundos
         setTimeout(function() {
-            window.location.href = "/{{ nome }}";
-        }, 2000);
+            window.location.href = "{{ subdomain_url }}";
+        }, 5000);
     </script>
 </body>
 </html>
