@@ -1,8 +1,11 @@
+# controllers/dashboard.py - Nenhuma alteração significativa necessária para o roteamento
+
 from flask import Blueprint, render_template, current_app, request, redirect, url_for
 import os
-import sys # Added import
-import re # Added import
+import sys
+import re
 from utils.filetools import listar_projetos
+import shutil # Certifique-se de que shutil está importado
 
 dashboard_bp = Blueprint('dashboard', __name__)
 # projects directory is configured in app.config['BASE_DIR']
@@ -19,31 +22,54 @@ def projeto(nome):
     estrutura = {
         'Modelos': [],
         'Controladores': [],
-        'Views': []
+        'Views': [],
+        'Arquivos Estáticos': [],
+        'Utilitários': [],
+        'Outros Arquivos': [] # Adicionando uma categoria para outros arquivos
     }
 
-    for raiz, pastas, arquivos in os.walk(caminho):
-        # Ignorar pastas desnecessárias
-        pastas[:] = [p for p in pastas if p not in ['.git', '.github']]
-        
-        # Filtrar arquivos de cache e outros arquivos desnecessários
-        arquivos_filtrados = [a for a in arquivos if not a.endswith('.pyc') and not a.endswith('.pyo')]
-        
-        for nome_arquivo in arquivos_filtrados:
-            caminho_rel = os.path.relpath(os.path.join(raiz, nome_arquivo), caminho)
-            
-            # Ignorar arquivos em pastas __pycache__
-            if '__pycache__' in caminho_rel:
-                continue
-                
-            if 'models' in raiz or 'model' in caminho_rel:
-                estrutura['Modelos'].append(caminho_rel)
-            elif 'controllers' in raiz or 'controller' in caminho_rel:
-                estrutura['Controladores'].append(caminho_rel)
-            elif 'templates' in raiz or 'view' in caminho_rel:
-                estrutura['Views'].append(caminho_rel)
+    # Lista arquivos e diretórios ignorados
+    ignore_list = ['.git', '.github', '__pycache__', '.venv', 'instance']
 
-    return render_template('projeto.html', nome=nome, estrutura=estrutura)
+    for raiz, pastas, arquivos in os.walk(caminho):
+        # Ignorar pastas na ignore_list
+        pastas[:] = [p for p in pastas if p not in ignore_list and not p.startswith('.')]
+
+        # Obter o caminho relativo da raiz atual
+        caminho_rel_raiz = os.path.relpath(raiz, caminho)
+
+        # Ignorar arquivos em pastas na ignore_list
+        arquivos_filtrados = [a for a in arquivos if not any(ignored_dir in os.path.join(caminho_rel_raiz, a) for ignored_dir in ignore_list)]
+        arquivos_filtrados = [a for a in arquivos_filtrados if not a.endswith('.pyc') and not a.endswith('.pyo')]
+
+
+        for nome_arquivo in arquivos_filtrados:
+            caminho_rel = os.path.join(caminho_rel_raiz, nome_arquivo)
+
+            if 'models' in caminho_rel_raiz or 'model' in nome_arquivo.lower():
+                estrutura['Modelos'].append(caminho_rel)
+            elif 'controllers' in caminho_rel_raiz or 'controller' in nome_arquivo.lower():
+                estrutura['Controladores'].append(caminho_rel)
+            elif 'templates' in caminho_rel_raiz or nome_arquivo.lower().endswith('.html'): # Considera arquivos .html como Views
+                estrutura['Views'].append(caminho_rel)
+            elif 'static' in caminho_rel_raiz or any(nome_arquivo.lower().endswith(ext) for ext in ['.css', '.js', '.jpg', '.png', '.gif', '.svg']): # Adiciona arquivos estáticos
+                 estrutura['Arquivos Estáticos'].append(caminho_rel)
+            elif 'utils' in caminho_rel_raiz:
+                 estrutura['Utilitários'].append(caminho_rel)
+            else:
+                # Adiciona outros arquivos que não se encaixam nas categorias acima
+                estrutura['Outros Arquivos'].append(caminho_rel)
+
+
+    # Ordenar arquivos dentro de cada categoria
+    for categoria in estrutura:
+        estrutura[categoria].sort()
+
+    # Remover categorias vazias para uma apresentação mais limpa
+    estrutura_limpa = {k: v for k, v in estrutura.items() if v}
+
+    return render_template('projeto.html', nome=nome, estrutura=estrutura_limpa)
+
 
 @dashboard_bp.route('/criar_projeto', methods=['POST'])
 def criar_projeto():
@@ -53,68 +79,72 @@ def criar_projeto():
         projeto_path = os.path.join(base, nome)
         if not os.path.exists(projeto_path):
             os.makedirs(projeto_path)
-            
-            # Estrutura mínima
+
+            # Estrutura mínima (verificar se já existem no código original e usar)
             estrutura = [
                 'controllers',
                 'models',
                 'templates',
                 'static/css',
                 'static/js',
-                'utils'
+                'utils',
+                'instance' # Adicionado instância para SQLite
             ]
             for pasta in estrutura:
                 os.makedirs(os.path.join(projeto_path, pasta), exist_ok=True)
-            
+
             # Carregar os templates de arquivos Python
-            with open(os.path.join(os.path.dirname(__file__), '../utils/template_app.py'), 'r') as f:
-                template_app = f.read()
-                
-            with open(os.path.join(os.path.dirname(__file__), '../utils/template_database.py'), 'r') as f:
-                template_database = f.read()
-                
-            with open(os.path.join(os.path.dirname(__file__), '../utils/template_exemplo.py'), 'r') as f:
-                template_exemplo = f.read()
-                
-            with open(os.path.join(os.path.dirname(__file__), '../utils/template_controller.py'), 'r') as f:
-                template_controller = f.read()
-                
-            # Criar arquivos __init__.py para evitar erros de importação
-            # init_py_content = "# Arquivo __init__.py para configurar o pacote" # Old content
-            
+            # Verifique se os caminhos dos templates estão corretos
+            template_dir = os.path.join(os.path.dirname(__file__), '../utils')
+            try:
+                with open(os.path.join(template_dir, 'template_app.py'), 'r', encoding='utf-8') as f:
+                    template_app = f.read()
+
+                with open(os.path.join(template_dir, 'template_database.py'), 'r', encoding='utf-8') as f:
+                    template_database = f.read()
+
+                with open(os.path.join(template_dir, 'template_exemplo.py'), 'r', encoding='utf-8') as f:
+                    template_exemplo = f.read()
+
+                with open(os.path.join(template_dir, 'template_controller.py'), 'r', encoding='utf-8') as f:
+                    template_controller = f.read()
+
+            except FileNotFoundError as e:
+                 # Se um template não for encontrado, registre o erro e continue ou retorne um erro
+                 print(f"Erro ao carregar template: {e}")
+                 # Dependendo da severidade, você pode querer retornar um erro para o usuário
+                 # return render_template('error.html', mensagem=f"Erro interno: template não encontrado - {e}")
+                 pass # Permite que o processo continue, mas arquivos podem faltar
+
+
             # Determinar o nome do blueprint a partir do template_controller.py
             blueprint_name = "main_bp" # Default
-            try:
-                bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', template_controller)
-                if bp_match:
-                    blueprint_name = bp_match.group(1)
-            except Exception:
-                pass  # Manter o default se a busca falhar
+            if 'template_controller' in locals(): # Verifica se o template foi carregado
+                try:
+                    bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', template_controller)
+                    if bp_match:
+                        blueprint_name = bp_match.group(1)
+                except Exception:
+                    pass  # Manter o default se a busca falhar
 
             # Conteúdo simplificado para controllers/__init__.py
-            # Relies on app.py (from template_app.py) to set up sys.path correctly.
+            # Assume que o app.py do projeto vai gerenciar sys.path se necessário
             controllers_init_py_content = f"""# Arquivo __init__.py para o pacote controllers
 # Configurado para importar {blueprint_name} automaticamente
 from .main_controller import {blueprint_name}
 """
-            
+
             # Conteúdo genérico para outros __init__.py
             generic_init_py_content = "# Arquivo __init__.py para configurar o pacote"
 
             # Arquivos do projeto aprimorado com MVC e conexão de banco de dados
+            # Use as variáveis carregadas ou um conteúdo padrão se o template falhou
             arquivos = {
-                # App principal com roteamento para acesso via URL direta (/nome_do_projeto)
-                'app.py': template_app,
-                
-                # Modelo de banco de dados SQLAlchemy
-                'models/database.py': template_database,
-                
-                # Modelo de exemplo
-                'models/exemplo.py': template_exemplo,
-                
-                # Controlador principal
-                'controllers/main_controller.py': template_controller,
-                # Template base
+                'app.py': locals().get('template_app', '# Conteúdo padrão para app.py\nfrom flask import Flask\napp = Flask(__name__)\n\n@app.route(\'/\')\ndef index():\n    return \'Projeto Flask criado!\''),
+                'models/database.py': locals().get('template_database', '# Conteúdo padrão para database.py\n'),
+                'models/exemplo.py': locals().get('template_exemplo', '# Conteúdo padrão para exemplo.py\n'),
+                'controllers/main_controller.py': locals().get('template_controller', '# Conteúdo padrão para main_controller.py\nfrom flask import Blueprint\nmain_bp = Blueprint(\'main\', __name__)\n\n@main_bp.route(\'/\')\ndef index():\n    return \'Controller principal carregado!\''),
+                # Templates HTML - Incluir conteúdo padrão ou carregar de templates se existirem
                 'templates/base.html': """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -136,25 +166,24 @@ from .main_controller import {blueprint_name}
             </div>
         </nav>
     </header>
-    
+
     <main>
         <div class="container">
             {% block content %}{% endblock %}
         </div>
     </main>
-    
+
     <footer>
         <div class="container">
             <p>&copy; {{ now.year if now else '2025' }} Projeto Flask</p>
         </div>
     </footer>
-    
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
 """,
-                # Template index
                 'templates/index.html': """{% extends "base.html" %}
 
 {% block title %}Início | Projeto Flask{% endblock %}
@@ -163,24 +192,24 @@ from .main_controller import {blueprint_name}
 <div class="welcome-section">
     <h1>Bem-vindo ao seu novo Projeto Flask!</h1>
     <p class="lead">Este projeto foi criado com um scaffold MVC completo, pronto para desenvolvimento.</p>
-    
+
     <div class="features">
         <div class="feature-card">
             <h3>SQLAlchemy</h3>
             <p>Banco de dados configurado com SQLAlchemy, pronto para criar modelos e fazer consultas.</p>
         </div>
-        
+
         <div class="feature-card">
             <h3>Blueprints</h3>
             <p>Estrutura organizada com blueprints para facilitar o crescimento do projeto.</p>
         </div>
-        
+
         <div class="feature-card">
             <h3>Templates</h3>
             <p>Sistema de templates Jinja2 com herança e blocos predefinidos.</p>
         </div>
     </div>
-    
+
     <div class="cta-section">
         <h2>Como começar?</h2>
         <ol>
@@ -193,7 +222,6 @@ from .main_controller import {blueprint_name}
 </div>
 {% endblock %}
 """,
-                # Template sobre
                 'templates/sobre.html': """{% extends "base.html" %}
 
 {% block title %}Sobre | Projeto Flask{% endblock %}
@@ -201,9 +229,9 @@ from .main_controller import {blueprint_name}
 {% block content %}
 <div class="about-section">
     <h1>Sobre este Projeto</h1>
-    
+
     <p>Este é um projeto Flask criado com estrutura MVC. Foi gerado automaticamente pelo Dashboard de Projetos.</p>
-    
+
     <h2>Recursos do Projeto</h2>
     <ul>
         <li>Estrutura MVC (Model-View-Controller) organizada</li>
@@ -212,7 +240,7 @@ from .main_controller import {blueprint_name}
         <li>CSS básico com design responsivo</li>
         <li>API REST básica para demonstração</li>
     </ul>
-    
+
     <h2>Tecnologias</h2>
     <ul>
         <li>Python</li>
@@ -224,7 +252,6 @@ from .main_controller import {blueprint_name}
 </div>
 {% endblock %}
 """,
-                # CSS
                 'static/css/style.css': """/* Estilos Gerais */
 * {
     margin: 0;
@@ -366,48 +393,89 @@ footer {
     }
 }
 """,
-                # JavaScript
                 'static/js/script.js': """// Script principal para funcionalidades do site
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Projeto Flask inicializado com sucesso!');
-    
+
     // Adiciona classe ativa ao link atual
     const currentPath = window.location.pathname;
     const navLinks = document.querySelectorAll('.nav-links a');
-    
+
     navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.parentElement.classList.add('active');
+        // Adiciona lógica para tratar a URL base do projeto
+        // Pega o prefixo da URL (ex: /meu_projeto)
+        const projectPrefix = window.location.pathname.split('/')[1];
+        const linkHref = link.getAttribute('href');
+
+        // Remove o prefixo do projeto do link href para comparação
+        const cleanedLinkHref = linkHref.replace('/' + projectPrefix, '');
+
+        // Verifica se o caminho atual (sem o prefixo do projeto) corresponde ao link
+        if (currentPath.replace('/' + projectPrefix, '') === cleanedLinkHref) {
+             link.parentElement.classList.add('active');
         }
+
+         // Lida com a rota raiz do projeto (comparação especial para '/')
+         if (currentPath === '/' + projectPrefix + '/' && linkHref === url_for('main.index')) {
+            link.parentElement.classList.add('active');
+         }
     });
 });
 """
             }
-            
+
             # Adicionar arquivos __init__.py para cada pacote Python
             init_dirs = [
                 'controllers',
                 'models',
-                'utils'
+                'utils',
+                # Certifique-se que a pasta raiz do projeto também tem um __init__.py se ela for um pacote
+                # '.' # Descomente se a raiz do projeto deve ser um pacote Python
             ]
-            
+
             for init_dir in init_dirs:
                 init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
-                os.makedirs(os.path.dirname(init_file_path), exist_ok=True)
-                with open(init_file_path, 'w', encoding='utf-8') as f:
+                # Verifica se o diretório pai existe antes de criar o __init__.py
+                if os.path.exists(os.path.dirname(init_file_path)):
                     if init_dir == 'controllers':
-                        f.write(controllers_init_py_content)
+                         # Garante que o __init__.py do controllers importa o blueprint correto
+                         with open(init_file_path, 'w', encoding='utf-8') as f:
+                            f.write(controllers_init_py_content)
                     else:
-                        f.write(generic_init_py_content)
-            
+                         # Para outros diretórios, usa o conteúdo genérico
+                         with open(init_file_path, 'w', encoding='utf-8') as f:
+                            f.write(generic_init_py_content)
+
+
             # Criar os arquivos do projeto
             for caminho, conteudo in arquivos.items():
                 arquivo_full_path = os.path.join(projeto_path, caminho)
                 os.makedirs(os.path.dirname(arquivo_full_path), exist_ok=True)
-                with open(arquivo_full_path, 'w', encoding='utf-8') as f:
-                    f.write(conteudo)
-                    
+                # Adiciona verificação para não sobrescrever arquivos existentes acidentalmente
+                if not os.path.exists(arquivo_full_path):
+                    try:
+                        with open(arquivo_full_path, 'w', encoding='utf-8') as f:
+                            f.write(conteudo)
+                    except Exception as e:
+                         print(f"Erro ao criar arquivo {arquivo_full_path}: {e}")
+                else:
+                    print(f"Arquivo {arquivo_full_path} já existe, pulando criação.")
+
+
+            # Criar banco de dados SQLite vazio na pasta instance
+            instance_dir = os.path.join(projeto_path, 'instance')
+            os.makedirs(instance_dir, exist_ok=True)
+            db_path = os.path.join(instance_dir, 'database.db')
+            if not os.path.exists(db_path):
+                try:
+                    import sqlite3
+                    conn = sqlite3.connect(db_path)
+                    conn.close()
+                except Exception as e:
+                    print(f"Erro ao criar banco de dados SQLite para {nome}: {e}")
+
+
     return redirect(url_for('dashboard.index'))
 
 @dashboard_bp.route('/projeto/<nome>/arquivo/<path:path>', methods=['GET', 'POST'])
@@ -416,30 +484,66 @@ def editar_arquivo(nome, path):
     arquivo_path = os.path.join(base, nome, path)
     if request.method == 'POST':
         conteudo = request.form.get('conteudo')
-        with open(arquivo_path, 'w', encoding='utf-8') as f:
-            f.write(conteudo)
-        return redirect(url_for('dashboard.projeto', nome=nome))
+        try:
+            with open(arquivo_path, 'w', encoding='utf-8') as f:
+                f.write(conteudo)
+            # Redireciona de volta para a página do projeto com uma mensagem de sucesso (opcional)
+            return redirect(url_for('dashboard.projeto', nome=nome)) # Adicionar mensagem de sucesso seria bom
+        except Exception as e:
+            # Tratar erro ao salvar
+            print(f"Erro ao salvar arquivo {arquivo_path}: {e}")
+            # Renderiza a página de edição novamente com uma mensagem de erro
+            try:
+                with open(arquivo_path, 'r', encoding='utf-8') as f:
+                     conteudo_atual = f.read()
+            except:
+                 conteudo_atual = "Não foi possível ler o arquivo após o erro."
+            return render_template('editar_arquivo.html',
+                                   nome=nome,
+                                   path=path,
+                                   conteudo=conteudo_atual,
+                                   erro=f"Erro ao salvar arquivo: {str(e)}"), 500 # Retorna status code 500
+
+
+    # Método GET
     try:
         with open(arquivo_path, 'r', encoding='utf-8') as f:
             conteudo = f.read()
     except FileNotFoundError:
-        conteudo = ''
-    return render_template('editar_arquivo.html', nome=nome, path=path, conteudo=conteudo)
+        conteudo = '' # Arquivo não encontrado, editor vazio
+        # Opcional: Retornar um 404 ou uma mensagem indicando que o arquivo não existe
+    except Exception as e:
+        # Tratar outros erros de leitura
+        conteudo = f"# Erro ao ler arquivo: {str(e)}"
+        return render_template('editar_arquivo.html',
+                               nome=nome,
+                               path=path,
+                               conteudo=conteudo,
+                               erro=f"Erro ao ler arquivo: {str(e)}"), 500
+
+
+    # Passa a linha de erro para o template, se existir na URL (redirecionado da execução)
+    error_line = request.args.get('errorLine')
+
+    return render_template('editar_arquivo.html', nome=nome, path=path, conteudo=conteudo, errorLine=error_line)
 
 @dashboard_bp.route('/deletar_projeto/<nome>', methods=['POST'])
 def deletar_projeto(nome):
-    import shutil # Added import
-    
+
     base = CAMINHO_PROJETOS()
     projeto_path = os.path.join(base, nome)
-    
+
     if os.path.exists(projeto_path) and os.path.isdir(projeto_path):
         try:
             shutil.rmtree(projeto_path)
+            # Opcional: Adicionar mensagem de sucesso
         except Exception as e:
-            # Em caso de erro, poderia registrar em log ou mostrar mensagem
-            pass
-            
+            # Em caso de erro, registre em log ou mostre mensagem de erro para o usuário
+            print(f"Erro ao deletar projeto {nome}: {e}")
+            # Pode redirecionar para a página principal com uma mensagem de erro
+            # return redirect(url_for('dashboard.index', erro=f"Erro ao excluir projeto {nome}: {str(e)}"))
+            pass # Continua o redirecionamento para a página principal
+
     return redirect(url_for('dashboard.index'))
 
 @dashboard_bp.route('/projeto/<nome>/deploy')
@@ -451,273 +555,3 @@ def deploy_guide(nome):
 def reparar_projeto(nome):
     """Repara um projeto existente adicionando os arquivos que faltam"""
     base = CAMINHO_PROJETOS()
-    projeto_path = os.path.join(base, nome)
-    
-    if not os.path.exists(projeto_path) or not os.path.isdir(projeto_path):
-        return render_template('projeto_error.html', nome=nome, 
-                              erro="Projeto não encontrado. Não foi possível reparar."), 404
-    
-    # Verificar e corrigir o app.py do projeto para resolver problemas de importação comuns
-    app_path = os.path.join(projeto_path, 'app.py')
-    app_fixed = False
-    
-    if os.path.exists(app_path):
-        try:
-            with open(app_path, 'r') as f:
-                app_content = f.read()
-            
-            # Verifica problemas comuns de importação do controlador
-            if "from controllers import main_controller" in app_content:
-                app_content = app_content.replace(
-                    "from controllers import main_controller", 
-                    "from controllers.main_controller import main_bp")
-                app_fixed = True
-            elif "import controllers.main_controller" in app_content and "main_bp" not in app_content:
-                app_content = app_content.replace(
-                    "import controllers.main_controller", 
-                    "from controllers.main_controller import main_bp")
-                app_fixed = True
-            elif "controllers.main_controller" in app_content and "register_blueprint" in app_content and "main_bp" not in app_content:
-                app_content = app_content.replace(
-                    "controllers.main_controller", 
-                    "controllers.main_controller.main_bp")
-                app_fixed = True
-            
-            # Solução ainda mais robusta: tenta simplesmente substituir toda a seção de importação do controlador
-            # Esta é uma abordagem mais agressiva, mas pode resolver problemas sutis de importação
-            if "controllers.main_controller" in app_content and not app_fixed:
-                import re
-                # Tenta encontrar e substituir o padrão de importação e registro com o padrão correto
-                pattern = r"(?s)(# *Importar.*?controllers.*?main_controller.*?\n)(.*?)(app\.register_blueprint.*?\))"
-                replacement = "\n# Importar e registrar controladores (corrigido automaticamente)\nfrom controllers.main_controller import main_bp\n\n# Registrar o blueprint\napp.register_blueprint(main_bp)"
-                
-                if re.search(pattern, app_content):
-                    app_content = re.sub(pattern, replacement, app_content)
-                    app_fixed = True
-                else:
-                    # Se não conseguiu encontrar o padrão específico, faz um fallback para uma abordagem mais simples
-                    # Verifica se precisa adicionar a importação correta
-                    if "from controllers.main_controller import main_bp" not in app_content:
-                        # Encontra onde importações normalmente estariam
-                        after_flask_import = app_content.find("from flask import") + 1
-                        if after_flask_import > 0:
-                            import_pos = app_content.find("\n\n", after_flask_import)
-                            if import_pos > 0:
-                                app_content = app_content[:import_pos] + "\n\n# Importação corrigida automaticamente\nfrom controllers.main_controller import main_bp" + app_content[import_pos:]
-                                app_fixed = True
-                    
-                    # Verifica se precisa registrar o blueprint
-                    if "app.register_blueprint(main_bp)" not in app_content:
-                        app_pos = app_content.find("app = Flask(__name__)") + 1
-                        if app_pos > 0:
-                            insert_pos = app_content.find("\n\n", app_pos)
-                            if insert_pos > 0:
-                                app_content = app_content[:insert_pos] + "\n\n# Registro de blueprint corrigido automaticamente\napp.register_blueprint(main_bp)" + app_content[insert_pos:]
-                                app_fixed = True
-            
-            # Se encontrou e corrigiu problemas, salva o arquivo
-            if app_fixed:
-                with open(app_path, 'w') as f:
-                    f.write(app_content)
-                    
-        except Exception as e:
-            print(f"Erro ao verificar app.py: {str(e)}")
-    
-    # Verificar e criar diretórios essenciais
-    diretorios = [
-        'controllers',
-        'models',
-        'templates',
-        'static/css',
-        'static/js',
-        'utils',
-        'instance'  # Adiciona o diretório instance para o banco de dados SQLite
-    ]
-    
-    for diretorio in diretorios:
-        dir_path = os.path.join(projeto_path, diretorio)
-        os.makedirs(dir_path, exist_ok=True)
-    
-    # Adicionar os arquivos __init__.py
-    init_py_content = "# Arquivo __init__.py para configurar o pacote"
-    init_dirs = ['controllers', 'models', 'utils']
-    
-    # Cria estrutura especial para controllers/__init__.py para garantir importação correta
-    controllers_init = os.path.join(projeto_path, 'controllers', '__init__.py')
-    main_controller_path = os.path.join(projeto_path, 'controllers', 'main_controller.py')
-    
-    # Se o main_controller.py existe, configura o __init__.py para importá-lo corretamente
-    if os.path.exists(main_controller_path):
-        # Verificar o arquivo para detectar o nome do blueprint
-        try:
-            with open(main_controller_path, 'r') as f:
-                controller_content = f.read()
-            
-            # Procura por padrões comuns de definição de blueprint
-            import re
-            bp_name = "main_bp"  # valor padrão
-            bp_match = re.search(r'(\w+)\s*=\s*Blueprint\(', controller_content)
-            if bp_match:
-                bp_name = bp_match.group(1)
-                
-            # Cria ou substitui o __init__.py com a importação correta
-            with open(controllers_init, 'w', encoding='utf-8') as f:
-                f.write("# Arquivo __init__.py para o pacote controllers\n")
-                f.write(f"# Configurado para importar {bp_name} automaticamente\n")
-                f.write(f"# Para compatibilidade direta em importações simples\n")
-                # IMPORTANTE: Em vez de importar de controllers.main_controller, colocamos a exportação direta
-                f.write(f"from .main_controller import {bp_name}\n")
-                
-        except Exception as e:
-            # Se falhar, usa a abordagem padrão
-            if not os.path.exists(controllers_init):
-                with open(controllers_init, 'w', encoding='utf-8') as f:
-                    f.write(init_py_content)
-    else:
-        # Para os outros diretórios
-        for init_dir in init_dirs:
-            init_file_path = os.path.join(projeto_path, init_dir, '__init__.py')
-            if not os.path.exists(init_file_path):
-                with open(init_file_path, 'w', encoding='utf-8') as f:
-                    f.write(init_py_content)
-    
-    # Verificar e criar os arquivos de template
-    arquivos_template = {
-        'app.py': '../utils/template_app.py',
-        'controllers/main_controller.py': '../utils/template_controller.py',
-        'models/database.py': '../utils/template_database.py',
-        'models/exemplo.py': '../utils/template_exemplo.py'
-    }
-    
-    for destino, origem in arquivos_template.items():
-        destino_path = os.path.join(projeto_path, destino)
-        origem_path = os.path.join(os.path.dirname(__file__), origem)
-        
-        # Se o arquivo não existir, copie do template
-        if not os.path.exists(destino_path):
-            with open(origem_path, 'r', encoding='utf-8') as f_origem:
-                template_content = f_origem.read()
-                
-            # Certifique-se de que o diretório de destino existe
-            os.makedirs(os.path.dirname(destino_path), exist_ok=True)
-            
-            with open(destino_path, 'w', encoding='utf-8') as f_destino:
-                f_destino.write(template_content)
-    
-    # Verificar se há templates HTML básicos
-    html_templates = {
-        'templates/base.html': """<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Projeto Flask{% endblock %}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-    </style>
-    {% block head %}{% endblock %}
-</head>
-<body>
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
-    {% block scripts %}{% endblock %}
-</body>
-</html>
-""",
-        'templates/index.html': """{% extends "base.html" %}
-
-{% block title %}Início{% endblock %}
-
-{% block content %}
-<h1>Bem-vindo ao Projeto Flask</h1>
-<p>Este projeto foi reparado automaticamente pelo Dashboard.</p>
-{% endblock %}
-"""
-    }
-    
-    for html_path, html_content in html_templates.items():
-        file_path = os.path.join(projeto_path, html_path)
-        if not os.path.exists(file_path):
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-    
-    # Verifica e repara problemas com banco de dados SQLite
-    # 1. Cria um banco de dados vazio na pasta instance
-    instance_dir = os.path.join(projeto_path, 'instance')
-    os.makedirs(instance_dir, exist_ok=True)
-    
-    try:
-        # Criar um arquivo de banco de dados SQLite vazio
-        import sqlite3
-        db_path = os.path.join(instance_dir, 'database.db')
-        conn = sqlite3.connect(db_path)
-        conn.close()
-        
-        # Verifica também se existe um app.db na raiz do projeto
-        app_db_path = os.path.join(projeto_path, 'app.db')
-        if not os.path.exists(app_db_path):
-            conn = sqlite3.connect(app_db_path)
-            conn.close()
-            
-        # Criar um arquivo especial para ajudar com importações no PythonAnywhere
-        pathfix_file = os.path.join(projeto_path, 'pathfix.py')
-        with open(pathfix_file, 'w') as f:
-            f.write("# Arquivo criado automaticamente para ajudar com importações no PythonAnywhere\n")
-            f.write("import os\n")
-            f.write("import sys\n\n")
-            f.write("# Adiciona o diretório atual ao sys.path\n")
-            f.write("current_dir = os.path.abspath(os.path.dirname(__file__))\n")
-            f.write("if current_dir not in sys.path:\n")
-            f.write("    sys.path.insert(0, current_dir)\n")
-            
-        # Verificar o conteúdo do arquivo models/database.py
-        database_path = os.path.join(projeto_path, 'models', 'database.py')
-        app_path = os.path.join(projeto_path, 'app.py')
-        
-        if os.path.exists(database_path) and os.path.exists(app_path):
-            with open(database_path, 'r') as f:
-                database_content = f.read()
-            
-            with open(app_path, 'r') as f:
-                app_content = f.read()
-            
-            # Se há referências ao SQLite mas não à pasta instance
-            if 'sqlite:///' in database_content and 'instance' not in database_content:
-                # Busca o template atualizado
-                template_path = os.path.join(os.path.dirname(__file__), '../utils/template_database.py')
-                with open(template_path, 'r') as f:
-                    template_content = f.read()
-                
-                # Modifica para usar o caminho correto com instance
-                corrected_content = template_content.replace(
-                    "app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'app.db')",
-                    "app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'instance', 'database.db')"
-                )
-                
-                # Salva o arquivo corrigido
-                with open(database_path, 'w') as f:
-                    f.write(corrected_content)
-    except Exception as e:
-        print(f"Erro ao reparar banco de dados: {str(e)}")
-    
-    # Prepara mensagem para o usuário sobre o que foi reparado
-    mensagem = "Projeto reparado com sucesso. "
-    detalhes = []
-    
-    if app_fixed:
-        detalhes.append("Corrigimos problemas de importação no app.py")
-    
-    if os.path.exists(controllers_init) and "from controllers.main_controller import" in open(controllers_init).read():
-        detalhes.append("Configuramos os controladores para importação correta")
-    
-    if os.path.exists(os.path.join(projeto_path, 'instance')):
-        detalhes.append("Configuramos o diretório instance para banco de dados")
-        
-    if detalhes:
-        mensagem += "Melhorias: " + ", ".join(detalhes) + "."
-    
-    # Redirecionar para a página do projeto com mensagem de sucesso
-    return redirect(url_for('dashboard.projeto', nome=nome))
